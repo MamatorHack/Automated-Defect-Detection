@@ -1,0 +1,41 @@
+# Modèles PyTorch (trop lourds pour GitHub - > 250 Mo chacun)
+memory_bank/*.pt
+memory_bank/*.pth
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Dataset MVTec AD (ne pas versionner les données brutes)
+data/
+datasets/
+mvtec/
+mvtec_ad/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environnements
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
