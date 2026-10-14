@@ -1,37 +1,58 @@
 {
   "protocol": {
+    "source": "MVTec AD uploaded category archive",
     "seed": 42,
     "validation_ratio": 0.4,
-    "note": "Project-specific stratified holdout from official MVTec AD test folders."
+    "strategy": "Deterministic stratified holdout by original defect folder",
+    "verified_execution_date": "2026-10-14"
   },
   "train_good": 220,
+  "validation_samples": 46,
+  "final_test_samples": 69,
   "patch_hog_knn": {
-    "threshold": 1.5497857332229614,
-    "validation_auroc": 0.948948948948949,
-    "validation_average_precision": 0.9889894046870789,
+    "threshold": 1.5721772909164429,
+    "validation": {
+      "auroc": 0.951951951951952,
+      "average_precision": 0.9893397493537988,
+      "accuracy": 0.8695652173913043,
+      "f1": 0.9117647058823529,
+      "tn": 9,
+      "fp": 0,
+      "fn": 6,
+      "tp": 31
+    },
     "final_test": {
-      "auroc": 0.9065934065934066,
-      "average_precision": 0.9783175514627461,
-      "accuracy": 0.8260869565217391,
-      "f1": 0.8867924528301887,
+      "auroc": 0.9134615384615384,
+      "average_precision": 0.9798484326189,
+      "accuracy": 0.8115942028985508,
+      "f1": 0.8761904761904762,
       "tn": 10,
       "fp": 3,
-      "fn": 9,
-      "tp": 47
+      "fn": 10,
+      "tp": 46
     }
   },
   "rgb_histogram_centroid": {
-    "threshold": 0.26076066493988037,
-    "validation_auroc": 0.5855855855855856,
+    "threshold": 0.14911438524723053,
+    "validation": {
+      "auroc": 0.5975975975975976,
+      "average_precision": 0.8915850613906511,
+      "accuracy": 0.5869565217391305,
+      "f1": 0.6779661016949152,
+      "tn": 7,
+      "fp": 2,
+      "fn": 17,
+      "tp": 20
+    },
     "final_test": {
-      "auroc": 0.43269230769230765,
-      "average_precision": 0.7978428911109702,
-      "accuracy": 0.2753623188405797,
-      "f1": 0.3055555555555556,
+      "auroc": 0.4340659340659341,
+      "average_precision": 0.7947441840692655,
+      "accuracy": 0.5217391304347826,
+      "f1": 0.6292134831460674,
       "tn": 8,
       "fp": 5,
-      "fn": 45,
-      "tp": 11
+      "fn": 28,
+      "tp": 28
     }
   }
 }
