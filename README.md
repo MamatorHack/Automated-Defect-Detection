@@ -139,7 +139,20 @@ Create/document a validation subset, choose the threshold on that validation evi
 
 Do **not** invent a threshold and do not tune it on the final test set.
 
-## 4. Run the web application
+## 4. Calibrate the threshold
+
+Use a dedicated validation split that is separate from the final test evidence:
+
+```bash
+python scripts/calibrate_threshold.py \
+  --validation-dir datasets/mvtec/bottle/validation \
+  --memory-bank memory_bank/bottle_model.pt \
+  --output artifacts/bottle_threshold_calibration.json
+```
+
+Copy the resulting validated threshold into `model_config.json`, then freeze it before final testing.
+
+## 5. Run the web application
 
 ```bash
 python app.py
@@ -147,7 +160,7 @@ python app.py
 
 Open the local Gradio URL shown in the terminal. The interface displays the anomaly overlay, decision-support label, raw anomaly score, inference latency, and human-review guidance.
 
-## 5. Run final evaluation
+## 6. Run final evaluation
 
 ```bash
 python scripts/evaluate.py \
