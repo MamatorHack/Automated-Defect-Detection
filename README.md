@@ -99,7 +99,21 @@ datasets/mvtec/
         └── contamination/
 ```
 
-## 1. Build a normal memory bank
+## 1. Create a documented validation / final-test split
+
+MVTec AD provides normal training data and a labeled test set. Because this project needs a threshold selected independently from the final evaluation, create a deterministic project-specific split of the category test set:
+
+```bash
+python scripts/prepare_validation_split.py \
+  --test-dir datasets/splits/bottle/final_test \
+  --output-dir datasets/splits/bottle \
+  --validation-ratio 0.40 \
+  --seed 42
+```
+
+This writes a `split_manifest.json` containing the exact counts and seed. **Report this protocol explicitly**: it is a project-specific holdout split, not the untouched official MVTec benchmark protocol.
+
+## 2. Build a normal memory bank
 
 ```bash
 python scripts/build_memory_bank.py \
@@ -110,7 +124,7 @@ python scripts/build_memory_bank.py \
 
 The script writes the `.pt` bank plus a JSON metadata file containing the real build configuration.
 
-## 2. Compare against a simple baseline
+## 3. Compare against a simple baseline
 
 ```bash
 python scripts/compare_methods.py \
@@ -145,7 +159,7 @@ Use a dedicated validation split that is separate from the final test evidence:
 
 ```bash
 python scripts/calibrate_threshold.py \
-  --validation-dir datasets/mvtec/bottle/validation \
+  --validation-dir datasets/splits/bottle/validation \
   --memory-bank memory_bank/bottle_model.pt \
   --output artifacts/bottle_threshold_calibration.json
 ```
@@ -219,6 +233,7 @@ The test suite verifies the baseline logic and the web API surface. GitHub Actio
 │   ├── anomaly_detector.py
 │   └── baselines.py
 ├── scripts/
+│   ├── prepare_validation_split.py
 │   ├── build_memory_bank.py
 │   ├── compare_methods.py
 │   └── evaluate.py
