@@ -1,167 +1,224 @@
-# 🔬 Automated Defect Detection — Industrial Quality Control POC
+# VisionGuard AI — Industrial Visual Anomaly Detection
 
-> **Équipe :** Mathis MARSAULT, Axel BONNEAU, Louis MAILLET  
-> **École :** ESAIP — École Supérieure Angevine en Informatique et Productique  
-> **Date :** Avril 2026
+VisionGuard AI is an academic prototype for **human-centered industrial quality control**. It detects visual anomalies in manufactured parts by comparing local deep features with a memory bank learned exclusively from normal images, then presents anomaly evidence to a quality operator through an interactive web interface.
 
----
+**Course:** Development of Intelligent Solutions — Universidad Bernardo O'Higgins  
+**Team:** Mathis Marsault · Julien Martinat · Louis Maillet  
+**Project type:** Integrated intelligent-systems prototype
 
-## 📋 Executive Summary
+## Why this problem matters
 
-Dans un contexte industriel où la compétitivité repose sur la réduction des rebuts et la garantie d'une qualité irréprochable, l'inspection manuelle montre ses limites (fatigue, lenteur, subjectivité).
+Manual visual inspection is repetitive and can be difficult when defects are small, rare, or visually diverse. The goal is not to replace the quality professional, but to provide consistent visual evidence that supports a responsible decision: **normal, potential anomaly, or human review required**.
 
-Ce projet présente un **Proof of Concept (POC)** visant à automatiser le contrôle qualité via des algorithmes de **Computer Vision State-of-the-Art**. L'architecture modulaire et non-supervisée apprend la *"perfection"* d'une pièce et identifie toute déviation mathématique.
+## What the prototype demonstrates
 
-**Résultats clés :** AUROC > 0.99 sur les surfaces complexes (Leather, Hazelnut, Bottle), avec des temps d'inférence < 50ms sur GPU.
+- normal-only anomaly detection for industrial images;
+- patch-level localization through an anomaly heatmap;
+- a polished interactive inspection interface;
+- explicit separation between model output and human responsibility;
+- reproducible memory-bank generation and evaluation scripts;
+- a simple non-deep baseline for technique comparison;
+- documented architecture, validation strategy, limitations, licensing, security, and AI use.
 
----
+## System architecture
 
-## 🧠 Architecture Technique
-
-### Paradigme : Apprentissage Non-Supervisé de la Normalité
-
-En milieu industriel, les pièces défectueuses sont rares — entraîner un modèle de classification classique serait inefficace et biaisé. Notre approche :
-
-1. **Memory Bank** — Extraction de l'empreinte mathématique des pièces **parfaites** uniquement (train set).
-2. **Détection d'Anomalie** — Toute nouvelle pièce s'éloignant de cette norme est classée comme anomalie.
-
-### Implémentation SOTA — PatchCore avec Wide-ResNet-50
-
-| Composant | Détail |
-|---|---|
-| **Backbone** | Wide-ResNet-50 (pré-entraîné ImageNet) |
-| **Extraction** | Layer 2 (micro-rayures, haute fréquence) + Layer 3 (défauts structurels) |
-| **Analyse** | Découpage en micro-patches — si **une seule zone** est anormale, la pièce est rejetée |
-| **Moteur KNN** | Remplacé par `torch.cdist` — calcul matriciel full-GPU |
-| **Inférence** | **< 50ms** par pièce |
-
-### Modularité — 15 Modèles Distincts
-
-Un modèle (Memory Bank) par ligne de production, plutôt qu'un modèle unique, pour :
-
-- **Scalabilité** — Nouvelle ligne = 100 pièces saines à scanner, sans ré-entraînement
-- **Performance** — Pas de *"Catastrophic Forgetting"* entre cuir, câbles et composants électroniques
-- **Edge Deployment** — Quelques Mo par modèle, chargement instantané sur la caméra de ligne
-
----
-
-## 📊 Résultats — AUROC par Ligne de Production
-
-| Ligne | Complexité | AUROC | Ligne | Complexité | AUROC |
-|---|---|---|---|---|---|
-| **Leather** | Texture organique | **0.9997** ✅ | Cable | Géométrie filaire | 0.9365 |
-| **Hazelnut** | Organique 3D | **0.9986** ✅ | Tile | Motif régulier | 0.9242 |
-| **Bottle** | Plastique/Reflets | **0.9968** ✅ | Zipper | Tissu & Métal | 0.9183 |
-| **Carpet** | Texture tissée | **0.9920** ✅ | Capsule | Pièce asymétrique | 0.9178 |
-| **Toothbrush** | Plastique moulé | **0.9917** ✅ | Screw | Métal usiné fin | 0.9129 |
-| **Wood** | Texture organique | **0.9886** ✅ | Transistor | Électronique | 0.8888 |
-| **MetalNut** | Pièce usinée | **0.9765** ✅ | Pill | Petite taille | 0.8704 |
-| Grid | Structure répétitive | 0.7385 ⚠️ | | | |
-
-> **Évaluation codée from-scratch** pour respecter l'intégrité du challenge (zéro code d'évaluation tiers).
-
-### Analyse Critique des Contre-Performances
-
-- **Grid (0.73)** — Downscaling à 224×224 : un défaut de 2mm devient sous-pixellique et disparaît.
-- **Screw** — Le seuil dynamique (95ème percentile) laisse passer des micro-défauts fins.
-- **Transistor / Pill** — Résolution spatiale insuffisante pour les détails électroniques/pharmacie.
-
----
-
-## 🗂️ Structure du Projet
-
-```
-Automated_Defect_Detection/
-├── Automated_defect.ipynb   # Notebook principal — entraînement & évaluation
-├── memory_bank/             # Memory Banks entraînées (modèles .pt, non versionnés)
-│   ├── bottle_model.pt
-│   ├── cable_model.pt
-│   └── ...                  # 15 modèles au total (MVTec AD)
-└── README.md
+```text
+Inspection image
+      │
+      ▼
+Image preprocessing
+      │
+      ▼
+Wide-ResNet-50 feature extraction
+      │
+      ▼
+Local patch embeddings ─────► normal-only memory bank
+      │                              │
+      └──────── nearest-neighbour distance
+                     │
+                     ▼
+         anomaly score + heatmap
+                     │
+                     ▼
+           calibrated threshold
+                     │
+          ┌──────────┴──────────┐
+          ▼                     ▼
+        NORMAL          POTENTIAL ANOMALY
+          └──────────┬──────────┘
+                     ▼
+            quality-operator review
 ```
 
-> ⚠️ **Les fichiers `.pt` (> 250 Mo chacun) ne sont pas versionnés sur GitHub.** Voir la section [Reproduire les Modèles](#-reproduire-les-modèles) pour les générer.
+A detailed diagram is available in `docs/ARCHITECTURE.md`.
 
----
+## Dataset and license
 
-## 🚀 Reproduire les Modèles
+The recommended benchmark is **MVTec AD**, an industrial anomaly-detection dataset with defect-free training images, defective/normal test images, and pixel-precise anomaly annotations. The dataset is distributed by MVTec under **CC BY-NC-SA 4.0** and is restricted to non-commercial use. It is intentionally **not included** in this repository.
 
-### Prérequis
+Official dataset page: https://www.mvtec.com/research-teaching/datasets/mvtec-ad  
+Reference paper: P. Bergmann, M. Fauser, D. Sattlegger, C. Steger, *MVTec AD — A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection*, CVPR 2019.
 
-- Python 3.9+
-- PyTorch ≥ 2.0 (CUDA recommandé)
-- Dataset MVTec AD (4.9 Go) — [Télécharger ici](https://www.mvtec.com/company/research/datasets/mvtec-ad)
-
-### Installation
+## Installation
 
 ```bash
-pip install torch torchvision tqdm scikit-learn matplotlib
+python -m venv .venv
 ```
 
-### Entraînement
+Windows:
 
-Ouvrir et exécuter le notebook `Automated_defect.ipynb` en suivant les cellules dans l'ordre :
-
-1. **Cellules de configuration** — Définir les chemins vers le dataset MVTec AD
-2. **Entraînement (Memory Bank)** — Extraction des features sur le train set (pièces saines uniquement)
-3. **Évaluation AUROC** — Calcul des scores par catégorie sur le test set
-4. **Visualisation** — Dashboard ROC Curves
-
----
-
-## 🗺️ Roadmap d'Optimisation (V1.0 Production)
-
-| Optimisation | Impact | Gain Estimé |
-|---|---|---|
-| **Sliding Window** | Scan en pleine résolution 4K (blocs 256×256) | Grid : 0.73 → **> 0.98** |
-| **TensorRT** | Compilation C++ NVIDIA | Mémoire ÷4, inférence **< 10ms** |
-| **Data Augmentation Latente** | Variations d'illumination synthétiques | Robustesse éclairage usine |
-
----
-
-## 🏭 Intégration Industrielle & ROI
-
-### Architecture Matérielle (Edge Computing — On-Premise)
-
-| Composant | Matériel | Prix Estimatif (HT) |
-|---|---|---|
-| Vision | Caméra GigE 4K + Objectif + Éclairage LED Polarisant | ~1 200 € |
-| Calcul | NVIDIA Jetson Orin NX (fanless, basse consommation) | ~1 200 € |
-| Déploiement | Logiciel + Création Memory Bank (service) | ~2 500 € |
-| **Total par ligne** | | **~4 900 €** |
-
-### Retour sur Investissement
-
-- Coût opérateur qualité 3×8 : **> 100 000 €/an**
-- Coût d'un rappel de lot défectueux : **dizaines de milliers d'euros**
-- **Amortissement estimé : < 2 mois** + traçabilité numérique horodatée
-
----
-
-## 📄 Dataset
-
-**MVTec AD** — [mvtec.com](https://www.mvtec.com/company/research/datasets/mvtec-ad)  
-15 catégories d'objets et textures industrielles — 4.9 Go
-
+```bash
+.venv\Scripts\activate
 ```
-@inproceedings{bergmann2019mvtec,
-  title={MVTec AD -- A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection},
-  author={Bergmann, Paul and Fauser, Michael and Sattlegger, David and Steger, Carsten},
-  booktitle={CVPR},
-  year={2019}
+
+macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Data layout
+
+After downloading MVTec AD from the official source, keep the dataset outside Git or under an ignored directory:
+
+```text
+datasets/mvtec/
+└── bottle/
+    ├── train/
+    │   └── good/
+    └── test/
+        ├── good/
+        ├── broken_large/
+        ├── broken_small/
+        └── contamination/
+```
+
+## 1. Build a normal memory bank
+
+```bash
+python scripts/build_memory_bank.py \
+  --train-dir datasets/mvtec/bottle/train/good \
+  --output memory_bank/bottle_model.pt \
+  --sample-ratio 0.20
+```
+
+The script writes the `.pt` bank plus a JSON metadata file containing the real build configuration.
+
+## 2. Compare against a simple baseline
+
+```bash
+python scripts/compare_methods.py \
+  --train-good datasets/mvtec/bottle/train/good \
+  --test-dir datasets/mvtec/bottle/test \
+  --output artifacts/bottle_histogram_baseline.json
+```
+
+This produces real evidence for technique comparison. The baseline is intentionally simple and should not be presented as the final model.
+
+## 3. Calibrate the threshold
+
+Create/document a validation subset, choose the threshold on that validation evidence, and copy `model_config.example.json` to `model_config.json`.
+
+```json
+{
+  "categories": {
+    "bottle": {
+      "memory_bank": "memory_bank/bottle_model.pt",
+      "threshold": 0.0,
+      "threshold_source": "Validation split — replace 0.0 with the calibrated value"
+    }
+  }
 }
 ```
 
----
+Do **not** invent a threshold and do not tune it on the final test set.
 
-## 👥 Auteurs
+## 4. Run the web application
 
-| Nom | École |
-|---|---|
-| Mathis MARSAULT | ESAIP |
-| Axel BONNEAU | ESAIP |
-| Louis MAILLET | ESAIP |
+```bash
+python app.py
+```
 
----
+Open the local Gradio URL shown in the terminal. The interface displays the anomaly overlay, decision-support label, raw anomaly score, inference latency, and human-review guidance.
 
-*Projet réalisé dans le cadre d'un POC industriel — ESAIP 2026*
+## 5. Run final evaluation
+
+```bash
+python scripts/evaluate.py \
+  --test-dir datasets/mvtec/bottle/test \
+  --memory-bank memory_bank/bottle_model.pt \
+  --threshold YOUR_VALIDATED_THRESHOLD \
+  --output artifacts/bottle_evaluation.json
+```
+
+The evaluator exports machine-generated JSON and CSV evidence containing AUROC, Average Precision, accuracy, F1, and confusion-matrix counts. These outputs should be used directly for the report and presentation.
+
+## Testing
+
+```bash
+python -m pytest -q
+```
+
+## Repository structure
+
+```text
+.
+├── app.py
+├── model_config.example.json
+├── requirements.txt
+├── src/
+│   ├── anomaly_detector.py
+│   └── baselines.py
+├── scripts/
+│   ├── build_memory_bank.py
+│   ├── compare_methods.py
+│   └── evaluate.py
+├── tests/
+│   └── test_baselines.py
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── VALIDATION_PLAN.md
+│   ├── ETHICS_SECURITY_RISKS.md
+│   ├── AI_USE_DECLARATION.md
+│   └── PROJECT_LOG.md
+├── artifacts/
+├── memory_bank/
+└── datasets/
+```
+
+## Evaluation principles
+
+The project deliberately distinguishes three layers:
+
+1. **Model capability** — compute visual anomaly evidence.
+2. **Operational process** — acquire, preprocess, score, display, log, and review evidence.
+3. **Responsible decision** — a qualified human remains accountable for accepting or rejecting a part.
+
+The validation process includes real metrics, edge cases, false-positive/false-negative analysis, latency, documented limitations, and reproducible outputs. See `docs/VALIDATION_PLAN.md`.
+
+## Known limitations
+
+- performance depends on controlled image acquisition;
+- unseen product variants can trigger false anomalies;
+- subtle defects can be lost after resizing;
+- a threshold calibrated for one category must not be assumed valid for another;
+- ImageNet-pretrained features may not capture every industrial micro-defect;
+- this academic prototype is not certified for autonomous production use.
+
+## Responsible use and security
+
+No credentials, tokens, `.env` files, personal/student data, or confidential industrial data should be committed. Dataset and third-party license conditions must be respected. See `docs/ETHICS_SECURITY_RISKS.md`.
+
+## Generative AI declaration
+
+Generative AI may be used for architecture, code, testing, documentation, analysis, and presentation support under the course's declared-use regime. All generated components must be reviewed by the team, all technical claims must be verified, and all metrics must come from real executions. The working declaration is maintained in `docs/AI_USE_DECLARATION.md`.
+
+## Academic integrity
+
+The team is responsible for understanding and defending every submitted component. The repository should preserve genuine development evidence rather than fabricated experiments, commits, metrics, or sources.
