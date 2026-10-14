@@ -205,3 +205,36 @@ document.querySelectorAll(".review-button").forEach(button => {
 });
 refreshHistory.addEventListener("click", refreshOperations);
 refreshOperations().catch(() => {});
+
+
+async function loadBenchmarks() {
+  const response = await fetch("/api/benchmarks");
+  if (!response.ok) return;
+  const data = await response.json();
+  const container = document.getElementById("benchmarkCards");
+  const rows = data.benchmarks || [];
+  if (!rows.length) {
+    container.innerHTML = '<div class="history-empty">No verified benchmark artifacts found.</div>';
+    return;
+  }
+  container.innerHTML = rows.map(row => {
+    const name = row.category.replaceAll("_", " ");
+    const auroc = row.auroc == null ? "—" : Number(row.auroc).toFixed(3);
+    const ap = row.average_precision == null ? "—" : Number(row.average_precision).toFixed(3);
+    const f1 = row.f1 == null ? "—" : Number(row.f1).toFixed(3);
+    const errors = `FP ${row.false_positive ?? "—"} · FN ${row.false_negative ?? "—"}`;
+    return `
+      <article class="benchmark-card">
+        <div><span class="mini-label">${row.selected_method}</span><h3>${name}</h3></div>
+        <div class="benchmark-values">
+          <span><small>AUROC</small><strong>${auroc}</strong></span>
+          <span><small>AP</small><strong>${ap}</strong></span>
+          <span><small>F1</small><strong>${f1}</strong></span>
+        </div>
+        <p>${errors}</p>
+      </article>
+    `;
+  }).join("");
+}
+
+loadBenchmarks().catch(() => {});
