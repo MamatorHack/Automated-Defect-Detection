@@ -281,3 +281,34 @@ Generative AI may be used for architecture, code, testing, documentation, analys
 ## Academic integrity
 
 The team is responsible for understanding and defending every submitted component. The repository should preserve genuine development evidence rather than fabricated experiments, commits, metrics, or sources.
+
+
+## Current experiment evidence
+
+Real experiments were executed on the uploaded MVTec AD categories **Bottle**, **Metal Nut**, and **Screw** using a deterministic 40% validation / 60% final-test holdout by defect folder (seed 42).
+
+| Category | Selected method | Final-test AUROC | AP | Accuracy | F1 |
+|---|---|---:|---:|---:|---:|
+| Bottle | Patch-HOG kNN | 1.0000 | 1.0000 | 0.9200 | 0.9444 |
+| Metal Nut | Patch-HOG kNN | 0.9066 | 0.9783 | 0.8261 | 0.8868 |
+| Screw | Patch-HOG kNN | 0.6406 | 0.8061 | 0.6042 | 0.6935 |
+
+The simple RGB-histogram baseline was substantially weaker, especially on Metal Nut and Screw. Screw is intentionally retained as a difficult stress-test category and a source of error-analysis evidence.
+
+Detailed summaries are stored under `artifacts/`, and the interpretation is documented in `docs/MODEL_SELECTION.md`.
+
+For the current UBO demo configuration:
+
+```bash
+set MODEL_CONFIG=model_config.ubo.json
+uvicorn webapp:app
+```
+
+On PowerShell:
+
+```powershell
+$env:MODEL_CONFIG="model_config.ubo.json"
+uvicorn webapp:app
+```
+
+The required `.npz` memory-bank files are generated locally with `scripts/build_hog_bank.py` and are intentionally not stored in Git because they are generated artifacts.
