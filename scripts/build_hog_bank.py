@@ -7,44 +7,17 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-from skimage.feature import hog
 
-
-IMAGE_SIZE = 256
-GRID = 8
-PATCH_SIZE = IMAGE_SIZE // GRID
+from src.hog_features import PROFILES, feature_grid
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build a normal-only Patch-HOG memory bank.")
     parser.add_argument("--train-dir", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--profile", choices=sorted(PROFILES), default="standard")
+    parser.add_argument("--top-k", type=int, default=3, help="Number of highest patch scores averaged at inference.")
     return parser.parse_args()
-
-
-def feature_grid(path: Path) -> np.ndarray:
-    arr = np.asarray(Image.open(path).convert("L").resize((IMAGE_SIZE, IMAGE_SIZE)), dtype=np.float32) / 255.0
-    rows = []
-    for gy in range(GRID):
-        row = []
-        for gx in range(GRID):
-            patch = arr[gy * PATCH_SIZE : (gy + 1) * PATCH_SIZE, gx * PATCH_SIZE : (gx + 1) * PATCH_SIZE]
-            h = hog(
-                patch,
-                orientations=9,
-                pixels_per_cell=(8, 8),
-                cells_per_block=(2, 2),
-                feature_vector=True,
-                block_norm="L2-Hys",
-            ).astype(np.float32)
-            dy, dx = np.gradient(patch)
-            extra = np.array(
-                [patch.mean(), patch.std(), np.abs(dx).mean(), np.abs(dy).mean()],
-                dtype=np.float32,
-            )
-            row.append(np.concatenate([h, extra]))
-        rows.append(row)
-    return np.asarray(rows, dtype=np.float32)
 
 
 def main() -> None:
@@ -53,15 +26,21 @@ def main() -> None:
     paths = sorted(p for p in train_dir.rglob("*") if p.suffix.lower() in {".png", ".jpg", ".jpeg"})
     if not paths:
         raise SystemExit(f"No training images found in {train_dir}")
+    if args.top_k < 1:
+        raise SystemExit("--top-k must be >= 1")
 
     start = time.perf_counter()
-    bank = np.stack([feature_grid(path) for path in paths])
+    bank = np.stack([feature_grid(Image.open(path).convert("RGB"), args.profile) for path in paths])
+    cfg = PROFILES[args.profile]
     metadata = {
         "method": "patch_hog_knn",
-        "image_size": IMAGE_SIZE,
-        "grid": GRID,
-        "patch_size": PATCH_SIZE,
+        "profile": args.profile,
+        "image_width": cfg["width"],
+        "image_height": cfg["height"],
+        "grid_x": cfg["grid_x"],
+        "grid_y": cfg["grid_y"],
         "feature_dim": int(bank.shape[-1]),
+        "score_top_k": args.top_k,
         "train_good": len(paths),
         "build_seconds": round(time.perf_counter() - start, 4),
     }
