@@ -1,14 +1,26 @@
 {
   "protocol": {
+    "source": "MVTec AD uploaded category archive",
     "seed": 42,
     "validation_ratio": 0.4,
-    "note": "Project-specific stratified holdout from official MVTec AD test folders."
+    "strategy": "Deterministic stratified holdout by original defect folder",
+    "verified_execution_date": "2026-10-14"
   },
   "train_good": 209,
+  "validation_samples": 33,
+  "final_test_samples": 50,
   "patch_hog_knn": {
-    "threshold": 1.4360393285751343,
-    "validation_auroc": 0.98,
-    "validation_average_precision": 0.9944827586206897,
+    "threshold": 1.4526714086532593,
+    "validation": {
+      "auroc": 0.975,
+      "average_precision": 0.9933333333333334,
+      "accuracy": 0.9393939393939394,
+      "f1": 0.9583333333333334,
+      "tn": 8,
+      "fp": 0,
+      "fn": 2,
+      "tp": 23
+    },
     "final_test": {
       "auroc": 1,
       "average_precision": 1,
@@ -21,17 +33,26 @@
     }
   },
   "rgb_histogram_centroid": {
-    "threshold": 0.06698590517044067,
-    "validation_auroc": 0.5349999999999999,
+    "threshold": 0.04757961258292198,
+    "validation": {
+      "auroc": 0.515,
+      "average_precision": 0.7826834029073946,
+      "accuracy": 0.696969696969697,
+      "f1": 0.8,
+      "tn": 3,
+      "fp": 5,
+      "fn": 5,
+      "tp": 20
+    },
     "final_test": {
-      "auroc": 0.6732456140350878,
-      "average_precision": 0.8924402305874211,
-      "accuracy": 0.68,
-      "f1": 0.7837837837837838,
-      "tn": 5,
-      "fp": 7,
-      "fn": 9,
-      "tp": 29
+      "auroc": 0.6535087719298247,
+      "average_precision": 0.887594583473529,
+      "accuracy": 0.66,
+      "f1": 0.7848101265822784,
+      "tn": 2,
+      "fp": 10,
+      "fn": 7,
+      "tp": 31
     }
   }
 }
