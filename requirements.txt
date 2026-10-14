@@ -1,0 +1,8 @@
+gradio>=5.0,<7.0
+numpy>=1.26
+opencv-python-headless>=4.9
+Pillow>=10.0
+pytest>=8.0
+scikit-learn>=1.4
+torch>=2.2
+torchvision>=0.17
