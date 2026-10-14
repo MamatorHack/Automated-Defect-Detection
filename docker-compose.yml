@@ -1,0 +1,14 @@
+services:
+  visionguard:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_CONFIG: /app/model_config.json
+      MODEL_DIR: /app/memory_bank
+      VISIONGUARD_RUNTIME_DIR: /app/runtime
+    volumes:
+      - ./memory_bank:/app/memory_bank:ro
+      - ./model_config.json:/app/model_config.json:ro
+      - ./runtime:/app/runtime
+    restart: unless-stopped
