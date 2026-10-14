@@ -1,177 +1,79 @@
 # VisionGuard AI — Industrial Visual Anomaly Detection
 
-VisionGuard AI is an academic prototype for **human-centered industrial quality control**. It detects visual anomalies in manufactured parts by comparing local deep features with a memory bank learned exclusively from normal images, then presents anomaly evidence to a quality operator through an interactive web interface.
+VisionGuard AI is an academic **industrial quality-control prototype** developed for the UBO course *Development of Intelligent Solutions*. It detects visual anomalies in manufactured parts, presents localized evidence to an operator, records model decisions separately from human decisions, and preserves enough traceability to reproduce the main experimental workflow.
 
-**Course:** Development of Intelligent Solutions — Universidad Bernardo O'Higgins  
 **Team:** Mathis Marsault · Julien Martinat · Louis Maillet  
-**Project type:** Integrated intelligent-systems prototype
+**Selected categories:** Bottle · Metal Nut · Screw  
+**Verified deployment engine:** Patch-HOG kNN  
+**Runtime:** local / on-premise oriented, CPU-compatible
 
-## Why this problem matters
+## Core idea
 
-Manual visual inspection is repetitive and can be difficult when defects are small, rare, or visually diverse. The goal is not to replace the quality professional, but to provide consistent visual evidence that supports a responsible decision: **normal, potential anomaly, or human review required**.
+The deployed model learns only from **normal** training images. Each inspection image is divided into local regions, HOG and texture descriptors are extracted, and each local descriptor is compared with the corresponding normal-reference memory bank using nearest-neighbour distance.
 
-## What the prototype demonstrates
-
-- normal-only anomaly detection for industrial images;
-- patch-level localization through an anomaly heatmap;
-- a polished interactive inspection interface;
-- explicit separation between model output and human responsibility;
-- reproducible memory-bank generation and evaluation scripts;
-- a simple non-deep baseline for technique comparison;
-- documented architecture, validation strategy, limitations, licensing, security, and AI use.
-
-## System architecture
+The system then:
 
 ```text
 Inspection image
-      │
-      ▼
-Image preprocessing
-      │
-      ▼
-Wide-ResNet-50 feature extraction
-      │
-      ▼
-Local patch embeddings ─────► normal-only memory bank
-      │                              │
-      └──────── nearest-neighbour distance
-                     │
-                     ▼
-         anomaly score + heatmap
-                     │
-                     ▼
-           calibrated threshold
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
-        NORMAL          POTENTIAL ANOMALY
-          └──────────┬──────────┘
-                     ▼
-            quality-operator review
+      ↓
+Category-specific preprocessing
+      ↓
+Patch HOG + local texture descriptors
+      ↓
+Nearest normal-reference distance
+      ↓
+Local anomaly map + image anomaly score
+      ↓
+Category-specific calibrated threshold
+      ↓
+NORMAL / ANOMALY decision support
+      ↓
+Human ACCEPT / REJECT / ESCALATE decision
+      ↓
+SQLite traceability record
 ```
 
-A detailed diagram is available in `docs/ARCHITECTURE.md`.
+The AI output is **decision support**, not autonomous production authority.
 
-## Dataset and license
+## Verified model-selection evidence
 
-The recommended benchmark is **MVTec AD**, an industrial anomaly-detection dataset with defect-free training images, defective/normal test images, and pixel-precise anomaly annotations. The dataset is distributed by MVTec under **CC BY-NC-SA 4.0** and is restricted to non-commercial use. It is intentionally **not included** in this repository.
+A simple RGB-histogram nearest-centroid baseline was compared with Patch-HOG kNN using real executions.
 
-Official dataset page: https://www.mvtec.com/research-teaching/datasets/mvtec-ad  
-Reference paper: P. Bergmann, M. Fauser, D. Sattlegger, C. Steger, *MVTec AD — A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection*, CVPR 2019.
+| Category | Method | Final AUROC | AP | Accuracy | F1 |
+|---|---|---:|---:|---:|---:|
+| Bottle | RGB histogram centroid | 0.6535 | 0.8876 | 0.6600 | 0.7848 |
+| Bottle | **Patch-HOG kNN** | **1.0000** | **1.0000** | **0.9200** | **0.9444** |
+| Metal Nut | RGB histogram centroid | 0.4341 | 0.7947 | 0.5217 | 0.6292 |
+| Metal Nut | **Patch-HOG kNN** | **0.9135** | **0.9798** | **0.8116** | **0.8762** |
+| Screw | RGB histogram centroid | 0.0028 | 0.5315 | 0.2604 | 0.0000 |
+| Screw | **Patch-HOG kNN** | **0.6406** | **0.8061** | **0.6042** | **0.6935** |
 
-## Installation
+Protocol: deterministic split within every original test defect folder, 40% validation / 60% final test, seed 42. This is a **project-specific holdout protocol**, not the untouched official MVTec benchmark protocol.
 
-```bash
-python -m venv .venv
-```
+## Fastest way to run the frozen demo
 
-Windows:
+Requirements:
+- Python 3.11 recommended;
+- the repository;
+- the prepared runtime bundle containing:
+  - `memory_bank/bottle_hog_bank.npz`
+  - `memory_bank/metal_nut_hog_bank.npz`
+  - `memory_bank/screw_hog_bank.npz`
+  - `model_config.json`
 
-```bash
-.venv\Scripts\activate
-```
+Create the environment:
 
-macOS/Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Data layout
+Place `memory_bank/` and `model_config.json` at the repository root, then run:
 
-After downloading MVTec AD from the official source, keep the dataset outside Git or under an ignored directory:
-
-```text
-datasets/mvtec/
-└── bottle/
-    ├── train/
-    │   └── good/
-    └── test/
-        ├── good/
-        ├── broken_large/
-        ├── broken_small/
-        └── contamination/
-```
-
-## 1. Create a documented validation / final-test split
-
-MVTec AD provides normal training data and a labeled test set. Because this project needs a threshold selected independently from the final evaluation, create a deterministic project-specific split of the category test set:
-
-```bash
-python scripts/prepare_validation_split.py \
-  --test-dir datasets/splits/bottle/final_test \
-  --output-dir datasets/splits/bottle \
-  --validation-ratio 0.40 \
-  --seed 42
-```
-
-This writes a `split_manifest.json` containing the exact counts and seed. **Report this protocol explicitly**: it is a project-specific holdout split, not the untouched official MVTec benchmark protocol.
-
-## 2. Build a normal memory bank
-
-```bash
-python scripts/build_memory_bank.py \
-  --train-dir datasets/mvtec/bottle/train/good \
-  --output memory_bank/bottle_model.pt \
-  --sample-ratio 0.20
-```
-
-The script writes the `.pt` bank plus a JSON metadata file containing the real build configuration.
-
-## 3. Compare against a simple baseline
-
-```bash
-python scripts/compare_methods.py \
-  --train-good datasets/mvtec/bottle/train/good \
-  --test-dir datasets/mvtec/bottle/test \
-  --output artifacts/bottle_histogram_baseline.json
-```
-
-This produces real evidence for technique comparison. The baseline is intentionally simple and should not be presented as the final model.
-
-## 3. Calibrate the threshold
-
-Create/document a validation subset, choose the threshold on that validation evidence, and copy `model_config.example.json` to `model_config.json`.
-
-```json
-{
-  "categories": {
-    "bottle": {
-      "memory_bank": "memory_bank/bottle_model.pt",
-      "threshold": 0.0,
-      "threshold_source": "Validation split — replace 0.0 with the calibrated value"
-    }
-  }
-}
-```
-
-Do **not** invent a threshold and do not tune it on the final test set.
-
-## 4. Calibrate the threshold
-
-Use a dedicated validation split that is separate from the final test evidence:
-
-```bash
-python scripts/calibrate_threshold.py \
-  --validation-dir datasets/splits/bottle/validation \
-  --memory-bank memory_bank/bottle_model.pt \
-  --output artifacts/bottle_threshold_calibration.json
-```
-
-Copy the resulting validated threshold into `model_config.json`, then freeze it before final testing.
-
-## 5. Run the web application
-
-### Recommended professional interface
-
-```bash
-uvicorn webapp:app --reload
+```powershell
+python -m uvicorn webapp:app --host 127.0.0.1 --port 8000
 ```
 
 Open:
@@ -180,161 +82,104 @@ Open:
 http://127.0.0.1:8000
 ```
 
-This FastAPI-based interface provides:
-- drag-and-drop inspection image upload;
-- production-category selection;
-- anomaly score and calibrated threshold;
-- patch-level anomaly overlay;
-- measured inference latency;
-- explicit human-review guidance;
-- health and configuration endpoints for reproducibility.
+The main interface contains three product views:
 
-### Optional Gradio interface
+- **Inspection** — upload, category selection, anomaly evidence, score, threshold, latency, and human review.
+- **Performance** — verified experiment results, model-selection evidence, and error analysis.
+- **System** — liveness/readiness, configured models, deployment properties, and operational status.
 
-```bash
-python app.py
+## Build everything again from the dataset
+
+Arrange the selected categories under a single root:
+
+```text
+selected_mvtec/
+├── bottle/
+├── metal_nut/
+└── screw/
 ```
 
-The Gradio interface remains available as a lightweight alternative for demonstrations.
+Then run:
 
-## 6. Run final evaluation
-
-```bash
-python scripts/evaluate.py \
-  --test-dir datasets/mvtec/bottle/test \
-  --memory-bank memory_bank/bottle_model.pt \
-  --threshold YOUR_VALIDATED_THRESHOLD \
-  --output artifacts/bottle_evaluation.json
+```powershell
+python scripts/bootstrap_demo.py --dataset-root "C:\path\to\selected_mvtec"
 ```
 
-The evaluator exports machine-generated JSON and CSV evidence containing AUROC, Average Precision, accuracy, F1, and confusion-matrix counts. These outputs should be used directly for the report and presentation.
+This automatically:
 
-## Testing
+1. creates deterministic validation/final-test holdouts;
+2. builds Patch-HOG normal memory banks;
+3. calibrates one threshold per category;
+4. evaluates the frozen threshold on the final holdout;
+5. writes machine-generated artifacts;
+6. creates `model_config.json`.
 
-```bash
+Then launch the app with Uvicorn.
+
+## Validation and evidence
+
+The repository contains:
+
+- `docs/MODEL_SELECTION.md` — compared methods and model-selection reasoning;
+- `docs/VALIDATION_PLAN.md` — evaluation protocol;
+- `docs/ERROR_ANALYSIS.md` — verified false-positive/false-negative analysis;
+- `docs/SCREW_ALIGNMENT_EXPERIMENT.md` — improvement experiment that was tested but not promoted;
+- `artifacts/*_experiment_summary.json` — machine-readable verified results.
+
+No final result should be manually invented or replaced by AI output.
+
+## Industrialized software features
+
+- FastAPI backend;
+- custom HTML/CSS/JavaScript frontend;
+- local model registry;
+- model artifact SHA-256 fingerprinting;
+- category-specific calibrated thresholds;
+- SQLite inspection metadata;
+- model decision stored separately from operator decision;
+- ACCEPT / REJECT / ESCALATE workflow;
+- liveness and readiness endpoints;
+- upload type and size checks;
+- no raw inspection-image persistence by default;
+- Docker / Docker Compose;
+- automated tests and GitHub Actions;
+- environment-based runtime configuration.
+
+See `docs/OPERATIONS.md` for details.
+
+## Reproducibility
+
+Run checks locally:
+
+```powershell
+python -m compileall webapp.py app.py src scripts tests
 python -m pytest -q
 ```
 
-The test suite verifies the baseline logic and the web API surface. GitHub Actions runs compilation and tests on every push and pull request.
+Or:
 
-## Repository structure
-
-```text
-.
-├── app.py
-├── webapp.py
-├── web/
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
-├── model_config.example.json
-├── requirements.txt
-├── src/
-│   ├── anomaly_detector.py
-│   └── baselines.py
-├── scripts/
-│   ├── prepare_validation_split.py
-│   ├── build_memory_bank.py
-│   ├── compare_methods.py
-│   └── evaluate.py
-├── tests/
-│   ├── test_baselines.py
-│   └── test_webapp.py
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── VALIDATION_PLAN.md
-│   ├── ETHICS_SECURITY_RISKS.md
-│   ├── AI_USE_DECLARATION.md
-│   └── PROJECT_LOG.md
-├── artifacts/
-├── memory_bank/
-└── datasets/
+```powershell
+make check
 ```
 
-## Evaluation principles
+GitHub Actions runs equivalent compilation/tests on each push and pull request.
 
-The project deliberately distinguishes three layers:
+## Dataset
 
-1. **Model capability** — compute visual anomaly evidence.
-2. **Operational process** — acquire, preprocess, score, display, log, and review evidence.
-3. **Responsible decision** — a qualified human remains accountable for accepting or rejecting a part.
+The project uses selected categories from **MVTec AD**. The dataset itself is not committed to the repository. Dataset licensing and usage conditions must be reviewed from the official MVTec source before redistribution or other use.
 
-The validation process includes real metrics, edge cases, false-positive/false-negative analysis, latency, documented limitations, and reproducible outputs. See `docs/VALIDATION_PLAN.md`.
+## Deep-model candidate
+
+A pretrained Wide-ResNet deep-patch implementation remains in the repository as an experimental higher-capacity candidate. It is **not** the verified deployed model and no unverified deep-model result is reported.
 
 ## Known limitations
 
-- performance depends on controlled image acquisition;
-- unseen product variants can trigger false anomalies;
-- subtle defects can be lost after resizing;
-- a threshold calibrated for one category must not be assumed valid for another;
-- ImageNet-pretrained features may not capture every industrial micro-defect;
-- this academic prototype is not certified for autonomous production use.
+- Bottle is currently the strongest category.
+- Metal Nut exposes weaknesses for mainly chromatic anomalies because the selected deployed HOG representation is grayscale.
+- Screw is deliberately retained as a stress test; pose variability and subtle local defects remain difficult.
+- Performance on MVTec does not establish performance on a real factory line.
+- Real deployment requires target-line data, camera/lighting validation, security hardening, monitoring, and formal operational acceptance.
 
-## Responsible use and security
+## Generative AI
 
-No credentials, tokens, `.env` files, personal/student data, or confidential industrial data should be committed. Dataset and third-party license conditions must be respected. See `docs/ETHICS_SECURITY_RISKS.md`.
-
-## Generative AI declaration
-
-Generative AI may be used for architecture, code, testing, documentation, analysis, and presentation support under the course's declared-use regime. All generated components must be reviewed by the team, all technical claims must be verified, and all metrics must come from real executions. The working declaration is maintained in `docs/AI_USE_DECLARATION.md`.
-
-## Academic integrity
-
-The team is responsible for understanding and defending every submitted component. The repository should preserve genuine development evidence rather than fabricated experiments, commits, metrics, or sources.
-
-
-## Current experiment evidence
-
-Real experiments were executed on the uploaded MVTec AD categories **Bottle**, **Metal Nut**, and **Screw** using a deterministic 40% validation / 60% final-test holdout by defect folder (seed 42).
-
-| Category | Selected method | Final-test AUROC | AP | Accuracy | F1 |
-|---|---|---:|---:|---:|---:|
-| Bottle | Patch-HOG kNN | 1.0000 | 1.0000 | 0.9200 | 0.9444 |
-| Metal Nut | Patch-HOG kNN | 0.9066 | 0.9783 | 0.8261 | 0.8868 |
-| Screw | Patch-HOG kNN | 0.6406 | 0.8061 | 0.6042 | 0.6935 |
-
-The simple RGB-histogram baseline was substantially weaker, especially on Metal Nut and Screw. Screw is intentionally retained as a difficult stress-test category and a source of error-analysis evidence.
-
-Detailed summaries are stored under `artifacts/`, and the interpretation is documented in `docs/MODEL_SELECTION.md`.
-
-For the current UBO demo configuration:
-
-```bash
-set MODEL_CONFIG=model_config.ubo.json
-uvicorn webapp:app
-```
-
-On PowerShell:
-
-```powershell
-$env:MODEL_CONFIG="model_config.ubo.json"
-uvicorn webapp:app
-```
-
-The required `.npz` memory-bank files are generated locally with `scripts/build_hog_bank.py` and are intentionally not stored in Git because they are generated artifacts.
-
-
-## Industrialized local demo
-
-The recommended workflow for the selected UBO categories is now a single reproducible command:
-
-```bash
-python scripts/bootstrap_demo.py --dataset-root /path/to/mvtec-selected
-uvicorn webapp:app --host 0.0.0.0 --port 8000
-```
-
-The bootstrap command builds the local model artifacts, creates the deterministic validation/final-test splits, calibrates thresholds, executes final evaluation, and writes `model_config.json`.
-
-The FastAPI service adds production-oriented prototype features:
-
-- liveness and model-readiness endpoints;
-- local model registry with SHA-256 artifact fingerprints;
-- SQLite inspection traceability;
-- model decision stored separately from the human operator decision;
-- ACCEPT / REJECT / ESCALATE operator-review workflow;
-- operational dashboard with inspection counts and latency;
-- raw inspection images are not persisted by default;
-- Docker / Compose packaging;
-- environment-based configuration.
-
-See `docs/OPERATIONS.md` for the deployment model and the explicit boundary between this academic prototype and a real certified factory deployment.
+Generative AI was used materially for architecture, code/refactoring, tests, documentation, analysis support, and presentation preparation. The team remains responsible for execution, verification, technical understanding, and all submitted results. See `docs/AI_USE_DECLARATION.md`.
