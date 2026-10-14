@@ -20,3 +20,13 @@ Do not select the decision threshold on the final test set. Create or document a
 ## Reproducibility rule
 
 No metric may be typed manually into the final report. Store machine-generated JSON/CSV outputs under `artifacts/` and build tables or figures from those files.
+
+
+## Project-specific holdout protocol
+
+MVTec AD does not provide a separate labeled validation split for threshold calibration. For this project, `scripts/prepare_validation_split.py` deterministically partitions each original test subfolder into:
+
+- a **validation holdout** used only to select the decision threshold;
+- a **final-test holdout** used only after the threshold is frozen.
+
+The split seed, ratio, and image counts are written to `split_manifest.json`. This must be disclosed in the report as a project-specific evaluation protocol rather than presented as the untouched official MVTec benchmark.
