@@ -10,3 +10,4 @@ scikit-learn>=1.4
 torch>=2.2
 torchvision>=0.17
 uvicorn[standard]>=0.30
+scikit-image>=0.24
