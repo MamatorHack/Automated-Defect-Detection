@@ -7,7 +7,7 @@ Validate whether the prototype can separate normal and defective industrial imag
 ## Required evidence
 
 1. **Dataset traceability** — category, source, license, train/test structure, preprocessing, and any split created by the team.
-2. **Technique comparison** — at minimum one simple baseline and the selected deep anomaly detector.
+2. **Technique comparison** — at minimum one simple baseline and the selected anomaly detector.
 3. **Real metrics** — AUROC, Average Precision, F1, confusion matrix counts, false positives, and false negatives from actual executions.
 4. **Edge cases** — lighting shift, crop/position variation, subtle defects, unseen defect types, and low-quality images where applicable.
 5. **Error analysis** — inspect representative false positives and false negatives and explain likely causes.
