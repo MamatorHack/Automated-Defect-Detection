@@ -1,35 +1,66 @@
-# Data Card — MVTec AD Usage
+# Data Card — Selected MVTec AD Categories
 
 ## Dataset role
 
-MVTec AD is used as a public academic benchmark for industrial anomaly detection. The project does not redistribute the dataset.
+MVTec AD is used as a public academic benchmark for industrial anomaly detection. The project does not redistribute the original dataset.
 
-## Intended subset
+Selected categories:
+- Bottle;
+- Metal Nut;
+- Screw.
 
-Experiments should be run per object/texture category. For each selected category:
+## Training role
 
-- `train/good` is used to build the normal memory bank;
-- a documented validation subset is used to select the decision threshold;
-- `test/good` and defect folders are used only for final evaluation after threshold selection.
+For each category, the official `train/good` directory is used to build the normal-only reference memory bank.
+
+No defective training examples are required by the selected Patch-HOG detector.
+
+## Project-specific validation protocol
+
+The labeled original test folders are split deterministically **within each defect subfolder** into:
+
+- 40% validation holdout — threshold selection only;
+- 60% final-test holdout — final reporting only.
+
+Seed: 42.
+
+This protocol must be reported as a project-specific holdout procedure and not as the untouched official MVTec benchmark protocol.
 
 ## Source and license
 
 Official source: https://www.mvtec.com/research-teaching/datasets/mvtec-ad
 
-License: **CC BY-NC-SA 4.0**. MVTec explicitly restricts the dataset to non-commercial use.
+The repository records the dataset source and does not include the raw benchmark files. License/usage conditions should be checked from the official MVTec source for the intended use.
 
-## Data quality considerations
+## Deployed transformations
 
-The benchmark contains controlled industrial-style imagery, but real production environments can differ in camera, lighting, pose, contamination, product revision, and defect prevalence. Benchmark performance must therefore not be presented as guaranteed factory performance.
+For the verified Patch-HOG model:
 
-## Transformations
+1. RGB input is converted to grayscale;
+2. image is resized to 256 × 256;
+3. image is divided into an 8 × 8 grid;
+4. each patch receives a HOG descriptor;
+5. mean, standard deviation, and mean absolute x/y gradients are appended;
+6. local features are compared with normal training features at corresponding grid positions.
 
-The selected deep detector applies:
+## Data-quality considerations
 
-1. RGB conversion;
-2. resize to 256 × 256;
-3. center crop to 224 × 224;
-4. ImageNet normalization;
-5. feature extraction from intermediate Wide-ResNet-50 layers.
+Benchmark imagery is controlled. A real production line may differ in:
 
-These transformations can remove very small spatial defects. This is a known limitation that must be included in result interpretation.
+- camera model;
+- illumination;
+- pose;
+- contamination;
+- product revision;
+- defect prevalence;
+- image resolution.
+
+Therefore the benchmark evidence validates the prototype workflow, not industrial certification.
+
+## Known category-specific observations
+
+- Bottle: highly separable under the current project protocol.
+- Metal Nut: subtle color defects are challenging because the deployed representation is grayscale.
+- Screw: orientation variability and small localized defects create substantial errors.
+
+These observations are supported by the verified error analysis in `docs/ERROR_ANALYSIS.md`.
