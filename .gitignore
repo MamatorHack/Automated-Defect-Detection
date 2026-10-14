@@ -1,6 +1,7 @@
 # Model artifacts
 memory_bank/*.pt
 memory_bank/*.pth
+memory_bank/*.npz
 
 # Datasets and generated evaluation outputs
 datasets/
@@ -37,3 +38,6 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Runtime state
+runtime/
