@@ -1,36 +1,71 @@
-# Model Card — Deep Patch Anomaly Detector
+# Model Card — Verified Patch-HOG kNN Detector
 
 ## Purpose
 
-Provide visual anomaly evidence for industrial quality-control decision support.
+Provide localized visual-anomaly evidence for industrial quality-control decision support.
+
+## Deployment status
+
+**Verified deployment model for the frozen EVAL-01 prototype.**
+
+Selected categories:
+- Bottle;
+- Metal Nut;
+- Screw.
 
 ## Learning paradigm
 
-The model uses **normal-only reference data** rather than supervised defect-class training. Deep local features extracted from normal training images form a memory bank. At inference time, each patch is compared with its nearest normal reference patch.
+The model is **normal-only**. It does not require labeled defect examples to build its reference bank.
 
-## Backbone
+Normal training images are converted into local feature grids. At inference time, each local region is compared with normal examples at the corresponding spatial location.
 
-Wide-ResNet-50 pretrained on ImageNet is used as a fixed feature extractor. Intermediate spatial features from layers 2 and 3 are fused to preserve local information.
+## Representation
 
-## Output
+Current deployed profile:
 
-- image-level anomaly score;
-- binary decision-support label using a calibrated threshold;
-- spatial anomaly heatmap/overlay;
-- measured inference latency in the web interface.
+- grayscale image;
+- 256 × 256 input;
+- 8 × 8 spatial grid;
+- HOG descriptor per patch;
+- local texture statistics: mean, standard deviation, mean absolute x-gradient, mean absolute y-gradient.
+
+The image anomaly score is the mean of the three highest local nearest-neighbour distances.
 
 ## Decision policy
 
-The model is not the final authority. An anomalous result should trigger human quality review. Thresholds are category-specific and must be calibrated on validation data before final testing.
+Each product category has its own calibrated threshold.
 
-## Evaluation
+- score ≤ threshold → `NORMAL`;
+- score > threshold → `ANOMALY`.
 
-Use `scripts/evaluate.py` to generate machine-readable metrics from real executions. At minimum report AUROC, Average Precision, F1, confusion-matrix counts, and representative errors. Do not manually type or fabricate metrics.
+This is a **decision-support label**. The final production decision remains human and is stored separately as ACCEPT / REJECT / ESCALATE.
+
+## Threshold selection
+
+Thresholds were selected on a dedicated deterministic validation holdout using the Youden J criterion, then frozen before final-test evaluation.
+
+Project protocol:
+- 40% validation;
+- 60% final test;
+- stratified within each original defect folder;
+- seed 42.
+
+## Verified final-test results
+
+| Category | AUROC | AP | Accuracy | F1 |
+|---|---:|---:|---:|---:|
+| Bottle | 1.0000 | 1.0000 | 0.9200 | 0.9444 |
+| Metal Nut | 0.9135 | 0.9798 | 0.8116 | 0.8762 |
+| Screw | 0.6406 | 0.8061 | 0.6042 | 0.6935 |
 
 ## Limitations
 
-- sensitive to image-acquisition changes;
-- center-crop/downscaling can hide tiny defects;
-- pretrained natural-image features may not encode every industrial micro-defect;
-- memory-bank size influences speed and memory use;
-- category/domain changes require re-validation.
+- grayscale HOG is weak for mainly chromatic anomalies;
+- fixed-grid features are sensitive to object pose;
+- subtle localized defects can remain below threshold;
+- MVTec benchmark results do not guarantee factory-line performance;
+- every new product/camera/lighting configuration requires re-validation.
+
+## Experimental candidate
+
+A pretrained Wide-ResNet deep-patch detector remains implemented as a higher-capacity research candidate. It is not the source of the verified deployed metrics above.
