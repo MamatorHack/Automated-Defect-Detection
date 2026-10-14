@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
 from src.anomaly_detector import DeepPatchAnomalyDetector
+from src.hog_anomaly_detector import PatchHOGAnomalyDetector
 
 APP_NAME = "VisionGuard AI"
 ROOT = Path(__file__).resolve().parent
@@ -28,7 +29,7 @@ app = FastAPI(
 )
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
-_detector_cache: dict[str, DeepPatchAnomalyDetector] = {}
+_detector_cache: dict[str, object] = {}
 
 
 def _load_config() -> dict:
@@ -48,7 +49,7 @@ def _category_config(category: str) -> dict:
     return item
 
 
-def _get_detector(category: str) -> DeepPatchAnomalyDetector:
+def _get_detector(category: str):
     if category in _detector_cache:
         return _detector_cache[category]
 
@@ -69,7 +70,14 @@ def _get_detector(category: str) -> DeepPatchAnomalyDetector:
             detail=f"Memory bank is missing for '{category}': {bank}",
         )
 
-    detector = DeepPatchAnomalyDetector(bank, threshold=float(threshold))
+    engine = item.get("engine", "deep_patch")
+    if engine == "patch_hog":
+        detector = PatchHOGAnomalyDetector(bank, threshold=float(threshold))
+    elif engine == "deep_patch":
+        detector = DeepPatchAnomalyDetector(bank, threshold=float(threshold))
+    else:
+        raise HTTPException(status_code=409, detail=f"Unsupported engine: {engine}")
+
     _detector_cache[category] = detector
     return detector
 
@@ -115,8 +123,8 @@ def model_info(category: str) -> dict:
     item = _category_config(category)
     return {
         "category": category,
-        "method": "Normal-only deep patch anomaly detection",
-        "backbone": "Wide-ResNet-50 pretrained on ImageNet",
+        "method": item.get("engine", "deep_patch"),
+        "backbone": "Wide-ResNet-50 pretrained on ImageNet" if item.get("engine", "deep_patch") == "deep_patch" else "HOG + local texture statistics",
         "decision_policy": "Human decision support",
         "threshold_source": item.get("threshold_source", "Not documented"),
     }
