@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VisionGuard AI — Industrial Quality Intelligence</title>
+  <meta name="description" content="Human-centered industrial visual anomaly detection prototype." />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">V</span>
+      <span>
+        <strong>VisionGuard AI</strong>
+        <small>Industrial Quality Intelligence</small>
+      </span>
+    </a>
+    <div class="status-pill"><span class="dot"></span> Local inference</div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow">UBO · DEVELOPMENT OF INTELLIGENT SOLUTIONS</div>
+      <h1>Visual anomaly detection<br /><span>built for human decisions.</span></h1>
+      <p>
+        Inspect industrial parts with normal-only deep visual features, localized anomaly evidence,
+        and an explicit human-review workflow.
+      </p>
+      <div class="hero-badges">
+        <span>Normal-only learning</span>
+        <span>Patch-level evidence</span>
+        <span>Human in the loop</span>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <article class="panel input-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="step">01</span>
+            <h2>Inspection input</h2>
+          </div>
+          <span class="muted">PNG · JPEG · WEBP</span>
+        </div>
+
+        <label class="field">
+          <span>Production category</span>
+          <select id="category"></select>
+        </label>
+
+        <label class="dropzone" id="dropzone">
+          <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+          <img id="preview" alt="Selected part preview" />
+          <div id="dropPrompt" class="drop-prompt">
+            <div class="upload-icon">↑</div>
+            <strong>Drop an inspection image</strong>
+            <span>or click to browse</span>
+          </div>
+        </label>
+
+        <button id="inspectButton" class="primary" disabled>
+          <span>Run inspection</span>
+          <span class="arrow">→</span>
+        </button>
+
+        <div id="configurationWarning" class="warning hidden"></div>
+      </article>
+
+      <article class="panel result-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="step">02</span>
+            <h2>Anomaly evidence</h2>
+          </div>
+          <span id="resultState" class="result-state idle">Awaiting image</span>
+        </div>
+
+        <div class="result-visual">
+          <img id="overlay" alt="Anomaly evidence overlay" />
+          <div id="emptyResult" class="empty-result">
+            <div class="scan-frame"></div>
+            <p>Inspection evidence will appear here.</p>
+          </div>
+          <div id="loader" class="loader hidden"><span></span><span></span><span></span></div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <span>Anomaly score</span>
+            <strong id="score">—</strong>
+          </div>
+          <div class="metric">
+            <span>Threshold</span>
+            <strong id="threshold">—</strong>
+          </div>
+          <div class="metric">
+            <span>Latency</span>
+            <strong id="latency">—</strong>
+          </div>
+        </div>
+
+        <div class="guidance">
+          <span>Operator guidance</span>
+          <p id="guidance">The model provides evidence only. Final quality responsibility remains human.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="evidence-grid">
+      <article>
+        <span class="mini-label">MODEL CAPABILITY</span>
+        <h3>Detect visual deviation</h3>
+        <p>Local deep features are compared against a memory bank built from normal production examples.</p>
+      </article>
+      <article>
+        <span class="mini-label">OPERATIONAL PROCESS</span>
+        <h3>Turn evidence into workflow</h3>
+        <p>Image acquisition, preprocessing, calibrated scoring, visualization, logging, and review form the solution.</p>
+      </article>
+      <article>
+        <span class="mini-label">RESPONSIBLE DECISION</span>
+        <h3>Keep humans accountable</h3>
+        <p>An anomaly signal triggers review; it does not autonomously authorize or reject a production part.</p>
+      </article>
+    </section>
+
+    <section class="technical-strip">
+      <div>
+        <span>Backbone</span>
+        <strong>Wide-ResNet-50</strong>
+      </div>
+      <div>
+        <span>Representation</span>
+        <strong>Layer 2 + Layer 3 patches</strong>
+      </div>
+      <div>
+        <span>Comparison</span>
+        <strong>Nearest normal patch</strong>
+      </div>
+      <div>
+        <span>Deployment</span>
+        <strong>Local / on-premise ready</strong>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>VisionGuard AI · Academic prototype</span>
+    <span>Mathis Marsault · Julien Martinat · Louis Maillet</span>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
