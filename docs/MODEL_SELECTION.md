@@ -1,45 +1,65 @@
 # Model Selection Evidence
 
+## Objective
+
+Select an anomaly-detection technique using reproducible evidence rather than choosing a model only because it is more complex.
+
 ## Methods compared
 
-Two reproducible approaches were evaluated on the selected MVTec AD categories:
+1. **RGB histogram nearest-centroid baseline** — simple global color-distribution baseline.
+2. **Patch-HOG kNN anomaly detector** — normal-only local HOG + texture features compared at aligned image-grid locations.
+3. **Deep patch candidate** — pretrained Wide-ResNet features are implemented as a higher-capacity candidate, but no deep-model result is reported until pretrained weights can be executed and verified in the project environment.
 
-1. **RGB histogram nearest-centroid baseline** — a deliberately simple deterministic visual baseline.
-2. **Patch-HOG kNN anomaly detector** — a normal-only local-feature anomaly detector using HOG and texture statistics with nearest-neighbour comparison at aligned patch locations.
+## Evaluation protocol
 
-A deep patch model based on pretrained Wide-ResNet features remains available in the repository as a higher-capacity candidate, but only results from actual executions should be reported.
+- Dataset: uploaded MVTec AD categories **Bottle**, **Metal Nut**, and **Screw**.
+- Normal reference bank: official category `train/good`.
+- Original category test folders are deterministically split **within each defect folder**.
+- Validation holdout: 40%, used for threshold selection.
+- Final-test holdout: 60%, used only after the threshold is frozen.
+- Seed: 42.
+- Patch-HOG input resolution: 256 × 256.
+- Patch-HOG image score: mean of the three highest local nearest-neighbour distances.
+- The protocol is project-specific and must not be presented as the untouched official MVTec benchmark protocol.
 
-## Current real experiment results
-
-Protocol:
-- categories: **bottle**, **metal_nut**, **screw**;
-- normal training images: official category `train/good`;
-- original MVTec test folders split deterministically by defect folder;
-- 40% validation holdout for threshold selection;
-- 60% final-test holdout;
-- seed: 42;
-- image resolution for Patch-HOG: 256 × 256;
-- score: mean of the three highest local nearest-neighbour distances.
+## Verified results
 
 | Category | Method | Final-test AUROC | AP | Accuracy | F1 |
 |---|---|---:|---:|---:|---:|
-| Bottle | RGB histogram centroid | 0.6732 | 0.8924 | 0.6800 | 0.7838 |
+| Bottle | RGB histogram centroid | 0.6535 | 0.8876 | 0.6600 | 0.7848 |
 | Bottle | **Patch-HOG kNN** | **1.0000** | **1.0000** | **0.9200** | **0.9444** |
-| Metal nut | RGB histogram centroid | 0.4327 | 0.7978 | 0.2754 | 0.3056 |
-| Metal nut | **Patch-HOG kNN** | **0.9066** | **0.9783** | **0.8261** | **0.8868** |
-| Screw | RGB histogram centroid | 0.0023 | 0.5315 | 0.2604 | 0.0000 |
+| Metal Nut | RGB histogram centroid | 0.4341 | 0.7947 | 0.5217 | 0.6292 |
+| Metal Nut | **Patch-HOG kNN** | **0.9135** | **0.9798** | **0.8116** | **0.8762** |
+| Screw | RGB histogram centroid | 0.0028 | 0.5315 | 0.2604 | 0.0000 |
 | Screw | **Patch-HOG kNN** | **0.6406** | **0.8061** | **0.6042** | **0.6935** |
 
 ## Interpretation
 
-Patch-HOG is clearly stronger than the simple histogram baseline for all three selected categories. Bottle is highly separable in the current protocol, while metal nut remains strong but shows errors on color defects. Screw is the most difficult category: its pose/appearance variability and subtle localized defects cause both false positives and false negatives.
+Patch-HOG is clearly superior to the global histogram baseline for all three selected categories.
 
-This is useful model-selection evidence rather than a reason to hide Screw. It identifies the exact category where a higher-capacity representation is most justified.
+**Bottle** is strongly separable under the current project protocol and is the safest category for a live demonstration.
 
-## Recommended demo strategy
+**Metal Nut** remains strong but imperfect, making it useful for showing realistic error analysis rather than only ideal cases.
 
-- **Primary live demo:** Bottle.
-- **Secondary live demo:** Metal nut.
-- **Stress-test / limitation discussion:** Screw.
+**Screw** is the stress-test category. Its orientation variability, narrow geometry, subtle scratches, and thread defects expose the limits of fixed-grid handcrafted features. The category is intentionally retained because it provides concrete evidence for why a higher-capacity or alignment-aware representation is worth evaluating.
 
-The final report should preserve Screw as evidence of critical analysis and motivate additional work such as pretrained deep features, rotation-aware representations, higher-resolution processing, or object alignment.
+## Selection decision
+
+Patch-HOG kNN is the current **verified deployable model** because:
+
+- it materially outperforms the baseline;
+- it uses only normal training images;
+- it produces localized anomaly evidence;
+- it runs without a GPU;
+- its dependencies and generated artifacts are reproducible;
+- its limitations are visible and measurable.
+
+The deep patch implementation remains an **experimental candidate**, not a reported improvement, until its pretrained weights and final results are executed and verified.
+
+## Demo strategy
+
+- **Primary:** Bottle.
+- **Secondary:** Metal Nut.
+- **Stress test / limitations:** Screw.
+
+This positioning keeps the demonstration stable while preserving technically honest evidence of where the current model fails.
