@@ -107,6 +107,15 @@
           <span>Operator guidance</span>
           <p id="guidance">The model provides evidence only. Final quality responsibility remains human.</p>
         </div>
+
+        <div id="reviewActions" class="review-actions hidden">
+          <span>Human quality decision</span>
+          <div>
+            <button data-action="ACCEPT" class="review-button accept">Accept</button>
+            <button data-action="REJECT" class="review-button reject">Reject</button>
+            <button data-action="ESCALATE" class="review-button escalate">Escalate</button>
+          </div>
+        </div>
       </article>
     </section>
 
@@ -130,20 +139,46 @@
 
     <section class="technical-strip">
       <div>
-        <span>Backbone</span>
-        <strong>Wide-ResNet-50</strong>
+        <span>Verified engine</span>
+        <strong>Patch-HOG kNN</strong>
       </div>
       <div>
-        <span>Representation</span>
-        <strong>Layer 2 + Layer 3 patches</strong>
+        <span>Learning mode</span>
+        <strong>Normal-only reference bank</strong>
       </div>
       <div>
-        <span>Comparison</span>
-        <strong>Nearest normal patch</strong>
+        <span>Decision layer</span>
+        <strong>Calibrated category threshold</strong>
       </div>
       <div>
         <span>Deployment</span>
         <strong>Local / on-premise ready</strong>
+      </div>
+    </section>
+
+    <section class="operations">
+      <div class="operations-heading">
+        <div>
+          <span class="eyebrow">OPERATIONAL TRACEABILITY</span>
+          <h2>Inspection activity</h2>
+        </div>
+        <button id="refreshHistory" class="secondary">Refresh</button>
+      </div>
+
+      <div class="ops-stats">
+        <article><span>Total inspections</span><strong id="statTotal">0</strong></article>
+        <article><span>Model anomalies</span><strong id="statAnomalies">0</strong></article>
+        <article><span>Human reviewed</span><strong id="statReviewed">0</strong></article>
+        <article><span>Average latency</span><strong id="statLatency">—</strong></article>
+      </div>
+
+      <div class="history-card">
+        <div class="history-head">
+          <span>Time</span><span>Category</span><span>Model decision</span><span>Score</span><span>Human decision</span>
+        </div>
+        <div id="historyRows" class="history-rows">
+          <div class="history-empty">No inspections recorded yet.</div>
+        </div>
       </div>
     </section>
   </main>
