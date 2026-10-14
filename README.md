@@ -154,11 +154,34 @@ Copy the resulting validated threshold into `model_config.json`, then freeze it 
 
 ## 5. Run the web application
 
+### Recommended professional interface
+
+```bash
+uvicorn webapp:app --reload
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000
+```
+
+This FastAPI-based interface provides:
+- drag-and-drop inspection image upload;
+- production-category selection;
+- anomaly score and calibrated threshold;
+- patch-level anomaly overlay;
+- measured inference latency;
+- explicit human-review guidance;
+- health and configuration endpoints for reproducibility.
+
+### Optional Gradio interface
+
 ```bash
 python app.py
 ```
 
-Open the local Gradio URL shown in the terminal. The interface displays the anomaly overlay, decision-support label, raw anomaly score, inference latency, and human-review guidance.
+The Gradio interface remains available as a lightweight alternative for demonstrations.
 
 ## 6. Run final evaluation
 
@@ -178,11 +201,18 @@ The evaluator exports machine-generated JSON and CSV evidence containing AUROC, 
 python -m pytest -q
 ```
 
+The test suite verifies the baseline logic and the web API surface. GitHub Actions runs compilation and tests on every push and pull request.
+
 ## Repository structure
 
 ```text
 .
 ├── app.py
+├── webapp.py
+├── web/
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
 ├── model_config.example.json
 ├── requirements.txt
 ├── src/
@@ -193,7 +223,8 @@ python -m pytest -q
 │   ├── compare_methods.py
 │   └── evaluate.py
 ├── tests/
-│   └── test_baselines.py
+│   ├── test_baselines.py
+│   └── test_webapp.py
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── VALIDATION_PLAN.md
