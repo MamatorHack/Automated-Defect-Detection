@@ -312,3 +312,29 @@ uvicorn webapp:app
 ```
 
 The required `.npz` memory-bank files are generated locally with `scripts/build_hog_bank.py` and are intentionally not stored in Git because they are generated artifacts.
+
+
+## Industrialized local demo
+
+The recommended workflow for the selected UBO categories is now a single reproducible command:
+
+```bash
+python scripts/bootstrap_demo.py --dataset-root /path/to/mvtec-selected
+uvicorn webapp:app --host 0.0.0.0 --port 8000
+```
+
+The bootstrap command builds the local model artifacts, creates the deterministic validation/final-test splits, calibrates thresholds, executes final evaluation, and writes `model_config.json`.
+
+The FastAPI service adds production-oriented prototype features:
+
+- liveness and model-readiness endpoints;
+- local model registry with SHA-256 artifact fingerprints;
+- SQLite inspection traceability;
+- model decision stored separately from the human operator decision;
+- ACCEPT / REJECT / ESCALATE operator-review workflow;
+- operational dashboard with inspection counts and latency;
+- raw inspection images are not persisted by default;
+- Docker / Compose packaging;
+- environment-based configuration.
+
+See `docs/OPERATIONS.md` for the deployment model and the explicit boundary between this academic prototype and a real certified factory deployment.
