@@ -79,7 +79,7 @@ CSS = """
 .footer-note { opacity: 0.72; font-size: 13px; }
 """
 
-with gr.Blocks(title=APP_TITLE, css=CSS, theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title=APP_TITLE) as demo:
     gr.HTML(
         """
         <div class='hero'>
