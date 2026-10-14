@@ -1,0 +1,37 @@
+{
+  "protocol": {
+    "seed": 42,
+    "validation_ratio": 0.4,
+    "note": "Project-specific stratified holdout from official MVTec AD test folders."
+  },
+  "train_good": 220,
+  "patch_hog_knn": {
+    "threshold": 1.5497857332229614,
+    "validation_auroc": 0.948948948948949,
+    "validation_average_precision": 0.9889894046870789,
+    "final_test": {
+      "auroc": 0.9065934065934066,
+      "average_precision": 0.9783175514627461,
+      "accuracy": 0.8260869565217391,
+      "f1": 0.8867924528301887,
+      "tn": 10,
+      "fp": 3,
+      "fn": 9,
+      "tp": 47
+    }
+  },
+  "rgb_histogram_centroid": {
+    "threshold": 0.26076066493988037,
+    "validation_auroc": 0.5855855855855856,
+    "final_test": {
+      "auroc": 0.43269230769230765,
+      "average_precision": 0.7978428911109702,
+      "accuracy": 0.2753623188405797,
+      "f1": 0.3055555555555556,
+      "tn": 8,
+      "fp": 5,
+      "fn": 45,
+      "tp": 11
+    }
+  }
+}
