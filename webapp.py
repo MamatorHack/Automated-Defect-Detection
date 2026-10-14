@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from pydantic import BaseModel
 
+from src.benchmark_service import BenchmarkService
 from src.model_registry import ModelRegistry
 from src.settings import Settings
 from src.storage import InspectionStore
@@ -20,6 +21,7 @@ APP_NAME = "VisionGuard AI"
 settings = Settings.from_env()
 registry = ModelRegistry(settings.model_config, settings.model_dir, settings.root)
 store = InspectionStore(settings.database_path)
+benchmarks = BenchmarkService(settings.root / "artifacts")
 
 app = FastAPI(
     title=APP_NAME,
@@ -103,6 +105,11 @@ def inspections(limit: int = 20) -> dict:
 @app.get("/api/stats")
 def stats() -> dict:
     return store.stats()
+
+
+@app.get("/api/benchmarks")
+def benchmark_evidence() -> dict:
+    return {"benchmarks": benchmarks.summaries()}
 
 
 @app.post("/api/inspections/{inspection_id}/review")
