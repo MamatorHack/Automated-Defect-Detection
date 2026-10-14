@@ -4,20 +4,20 @@
     "bottle": {
       "engine": "patch_hog",
       "memory_bank": "memory_bank/bottle_hog_bank.npz",
-      "threshold": 1.4360393285751343,
-      "threshold_source": "Project-specific 40% validation holdout, seed 42"
+      "threshold": 1.4526714086532593,
+      "threshold_source": "Deterministic 40% validation holdout by defect folder, seed 42; verified execution 2026-10-14"
     },
     "metal_nut": {
       "engine": "patch_hog",
       "memory_bank": "memory_bank/metal_nut_hog_bank.npz",
-      "threshold": 1.5497857332229614,
-      "threshold_source": "Project-specific 40% validation holdout, seed 42"
+      "threshold": 1.5721772909164429,
+      "threshold_source": "Deterministic 40% validation holdout by defect folder, seed 42; verified execution 2026-10-14"
     },
     "screw": {
       "engine": "patch_hog",
       "memory_bank": "memory_bank/screw_hog_bank.npz",
       "threshold": 1.5268949270248413,
-      "threshold_source": "Project-specific 40% validation holdout, seed 42"
+      "threshold_source": "Deterministic 40% validation holdout by defect folder, seed 42; verified execution 2026-10-14"
     }
   }
 }
