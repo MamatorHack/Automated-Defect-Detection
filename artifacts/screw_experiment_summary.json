@@ -1,0 +1,59 @@
+{
+  "protocol": {
+    "source": "MVTec AD uploaded category archive",
+    "seed": 42,
+    "validation_ratio": 0.4,
+    "strategy": "Deterministic stratified holdout by original defect folder",
+    "verified_execution_date": "2026-10-14"
+  },
+  "train_good": 320,
+  "validation_samples": 64,
+  "final_test_samples": 96,
+  "patch_hog_knn": {
+    "threshold": 1.5268949270248413,
+    "validation": {
+      "auroc": 0.6523437500000001,
+      "average_precision": 0.8500242837809668,
+      "accuracy": 0.609375,
+      "f1": 0.6835443037974683,
+      "tn": 12,
+      "fp": 4,
+      "fn": 21,
+      "tp": 27
+    },
+    "final_test": {
+      "auroc": 0.6405633802816901,
+      "average_precision": 0.8060931589994286,
+      "accuracy": 0.6041666666666666,
+      "f1": 0.6935483870967742,
+      "tn": 15,
+      "fp": 10,
+      "fn": 28,
+      "tp": 43
+    }
+  },
+  "rgb_histogram_centroid": {
+    "threshold": null,
+    "threshold_note": "Youden J selects +infinity because validation ranking is effectively inverted.",
+    "validation": {
+      "auroc": 0.0013020833333333333,
+      "average_precision": 0.5456892896449963,
+      "accuracy": 0.25,
+      "f1": 0,
+      "tn": 16,
+      "fp": 0,
+      "fn": 48,
+      "tp": 0
+    },
+    "final_test": {
+      "auroc": 0.002816901408450705,
+      "average_precision": 0.5315453206308963,
+      "accuracy": 0.2604166666666667,
+      "f1": 0,
+      "tn": 25,
+      "fp": 0,
+      "fn": 71,
+      "tp": 0
+    }
+  }
+}

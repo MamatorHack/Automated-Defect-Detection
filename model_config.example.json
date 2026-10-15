@@ -1,0 +1,10 @@
+{
+  "default_category": "bottle",
+  "categories": {
+    "bottle": {
+      "memory_bank": "memory_bank/bottle_model.pt",
+      "threshold": null,
+      "threshold_source": "Set only after calibration on a validation split"
+    }
+  }
+}

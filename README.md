@@ -1,167 +1,530 @@
-# 🔬 Automated Defect Detection — Industrial Quality Control POC
+# VisionGuard AI
 
-> **Équipe :** Mathis MARSAULT, Axel BONNEAU, Louis MAILLET  
-> **École :** ESAIP — École Supérieure Angevine en Informatique et Productique  
-> **Date :** Avril 2026
+> Industrial visual anomaly detection with human-in-the-loop quality control.
 
----
-
-## 📋 Executive Summary
-
-Dans un contexte industriel où la compétitivité repose sur la réduction des rebuts et la garantie d'une qualité irréprochable, l'inspection manuelle montre ses limites (fatigue, lenteur, subjectivité).
-
-Ce projet présente un **Proof of Concept (POC)** visant à automatiser le contrôle qualité via des algorithmes de **Computer Vision State-of-the-Art**. L'architecture modulaire et non-supervisée apprend la *"perfection"* d'une pièce et identifie toute déviation mathématique.
-
-**Résultats clés :** AUROC > 0.99 sur les surfaces complexes (Leather, Hazelnut, Bottle), avec des temps d'inférence < 50ms sur GPU.
+**Course:** DES SOLUC INTELIGENTES [LAB 3]  
+**University:** Universidad Bernardo O'Higgins (UBO)  
+**Team:** Mathis M. / Louis / Julien  
+**Project:** Integrated Intelligent Solution — Industrial Defect Detection
 
 ---
 
-## 🧠 Architecture Technique
+## Overview
 
-### Paradigme : Apprentissage Non-Supervisé de la Normalité
+VisionGuard AI is an academic industrial quality-control prototype designed to detect visual anomalies in manufactured parts and present interpretable evidence to a human operator.
 
-En milieu industriel, les pièces défectueuses sont rares — entraîner un modèle de classification classique serait inefficace et biaisé. Notre approche :
+The goal is **not** to let an AI autonomously reject production parts. Instead, the system separates:
 
-1. **Memory Bank** — Extraction de l'empreinte mathématique des pièces **parfaites** uniquement (train set).
-2. **Détection d'Anomalie** — Toute nouvelle pièce s'éloignant de cette norme est classée comme anomalie.
+1. **Model capability** — detect visual deviation.
+2. **Operational process** — acquire, preprocess, score, visualize, log, and review.
+3. **Responsible decision** — a human operator chooses **ACCEPT**, **REJECT**, or **ESCALATE**.
 
-### Implémentation SOTA — PatchCore avec Wide-ResNet-50
+The current verified prototype supports three MVTec AD categories:
 
-| Composant | Détail |
-|---|---|
-| **Backbone** | Wide-ResNet-50 (pré-entraîné ImageNet) |
-| **Extraction** | Layer 2 (micro-rayures, haute fréquence) + Layer 3 (défauts structurels) |
-| **Analyse** | Découpage en micro-patches — si **une seule zone** est anormale, la pièce est rejetée |
-| **Moteur KNN** | Remplacé par `torch.cdist` — calcul matriciel full-GPU |
-| **Inférence** | **< 50ms** par pièce |
+- Bottle
+- Metal Nut
+- Screw
 
-### Modularité — 15 Modèles Distincts
-
-Un modèle (Memory Bank) par ligne de production, plutôt qu'un modèle unique, pour :
-
-- **Scalabilité** — Nouvelle ligne = 100 pièces saines à scanner, sans ré-entraînement
-- **Performance** — Pas de *"Catastrophic Forgetting"* entre cuir, câbles et composants électroniques
-- **Edge Deployment** — Quelques Mo par modèle, chargement instantané sur la caméra de ligne
+The verified deployment engine is **Patch-HOG kNN**, trained from normal images only.
 
 ---
 
-## 📊 Résultats — AUROC par Ligne de Production
+## Application
 
-| Ligne | Complexité | AUROC | Ligne | Complexité | AUROC |
-|---|---|---|---|---|---|
-| **Leather** | Texture organique | **0.9997** ✅ | Cable | Géométrie filaire | 0.9365 |
-| **Hazelnut** | Organique 3D | **0.9986** ✅ | Tile | Motif régulier | 0.9242 |
-| **Bottle** | Plastique/Reflets | **0.9968** ✅ | Zipper | Tissu & Métal | 0.9183 |
-| **Carpet** | Texture tissée | **0.9920** ✅ | Capsule | Pièce asymétrique | 0.9178 |
-| **Toothbrush** | Plastique moulé | **0.9917** ✅ | Screw | Métal usiné fin | 0.9129 |
-| **Wood** | Texture organique | **0.9886** ✅ | Transistor | Électronique | 0.8888 |
-| **MetalNut** | Pièce usinée | **0.9765** ✅ | Pill | Petite taille | 0.8704 |
-| Grid | Structure répétitive | 0.7385 ⚠️ | | | |
+The web application contains three views.
 
-> **Évaluation codée from-scratch** pour respecter l'intégrité du challenge (zéro code d'évaluation tiers).
+### Inspection
 
-### Analyse Critique des Contre-Performances
+Upload an industrial image, select the production category, and run an inspection.
 
-- **Grid (0.73)** — Downscaling à 224×224 : un défaut de 2mm devient sous-pixellique et disparaît.
-- **Screw** — Le seuil dynamique (95ème percentile) laisse passer des micro-défauts fins.
-- **Transistor / Pill** — Résolution spatiale insuffisante pour les détails électroniques/pharmacie.
+The system returns:
 
----
+- model decision: `NORMAL` or `ANOMALY`;
+- anomaly score;
+- category-specific calibrated threshold;
+- measured inference latency;
+- localized anomaly heatmap;
+- operator guidance;
+- human quality action: `ACCEPT`, `REJECT`, or `ESCALATE`.
 
-## 🗂️ Structure du Projet
+Every inspection is traceable in the local SQLite runtime database.
 
-```
-Automated_Defect_Detection/
-├── Automated_defect.ipynb   # Notebook principal — entraînement & évaluation
-├── memory_bank/             # Memory Banks entraînées (modèles .pt, non versionnés)
-│   ├── bottle_model.pt
-│   ├── cable_model.pt
-│   └── ...                  # 15 modèles au total (MVTec AD)
-└── README.md
-```
+### Performance
 
-> ⚠️ **Les fichiers `.pt` (> 250 Mo chacun) ne sont pas versionnés sur GitHub.** Voir la section [Reproduire les Modèles](#-reproduire-les-modèles) pour les générer.
+Displays verified experiment evidence loaded from machine-generated artifacts:
 
----
+- AUROC;
+- Average Precision;
+- Accuracy;
+- F1 score;
+- false positives / false negatives;
+- comparison against the RGB-histogram baseline.
 
-## 🚀 Reproduire les Modèles
+### System
 
-### Prérequis
+Displays operational status:
 
-- Python 3.9+
-- PyTorch ≥ 2.0 (CUDA recommandé)
-- Dataset MVTec AD (4.9 Go) — [Télécharger ici](https://www.mvtec.com/company/research/datasets/mvtec-ad)
-
-### Installation
-
-```bash
-pip install torch torchvision tqdm scikit-learn matplotlib
-```
-
-### Entraînement
-
-Ouvrir et exécuter le notebook `Automated_defect.ipynb` en suivant les cellules dans l'ordre :
-
-1. **Cellules de configuration** — Définir les chemins vers le dataset MVTec AD
-2. **Entraînement (Memory Bank)** — Extraction des features sur le train set (pièces saines uniquement)
-3. **Évaluation AUROC** — Calcul des scores par catégorie sur le test set
-4. **Visualisation** — Dashboard ROC Curves
+- API liveness;
+- model readiness;
+- configured production categories;
+- local inference mode;
+- model artifact availability;
+- calibrated threshold provenance;
+- deployment and traceability components.
 
 ---
 
-## 🗺️ Roadmap d'Optimisation (V1.0 Production)
+## System Architecture
 
-| Optimisation | Impact | Gain Estimé |
-|---|---|---|
-| **Sliding Window** | Scan en pleine résolution 4K (blocs 256×256) | Grid : 0.73 → **> 0.98** |
-| **TensorRT** | Compilation C++ NVIDIA | Mémoire ÷4, inférence **< 10ms** |
-| **Data Augmentation Latente** | Variations d'illumination synthétiques | Robustesse éclairage usine |
-
----
-
-## 🏭 Intégration Industrielle & ROI
-
-### Architecture Matérielle (Edge Computing — On-Premise)
-
-| Composant | Matériel | Prix Estimatif (HT) |
-|---|---|---|
-| Vision | Caméra GigE 4K + Objectif + Éclairage LED Polarisant | ~1 200 € |
-| Calcul | NVIDIA Jetson Orin NX (fanless, basse consommation) | ~1 200 € |
-| Déploiement | Logiciel + Création Memory Bank (service) | ~2 500 € |
-| **Total par ligne** | | **~4 900 €** |
-
-### Retour sur Investissement
-
-- Coût opérateur qualité 3×8 : **> 100 000 €/an**
-- Coût d'un rappel de lot défectueux : **dizaines de milliers d'euros**
-- **Amortissement estimé : < 2 mois** + traçabilité numérique horodatée
-
----
-
-## 📄 Dataset
-
-**MVTec AD** — [mvtec.com](https://www.mvtec.com/company/research/datasets/mvtec-ad)  
-15 catégories d'objets et textures industrielles — 4.9 Go
-
-```
-@inproceedings{bergmann2019mvtec,
-  title={MVTec AD -- A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection},
-  author={Bergmann, Paul and Fauser, Michael and Sattlegger, David and Steger, Carsten},
-  booktitle={CVPR},
-  year={2019}
-}
+```text
+Industrial image
+       │
+       ▼
+Category-specific preprocessing
+       │
+       ▼
+Patch HOG + local texture descriptors
+       │
+       ▼
+Normal-only reference memory bank
+       │
+       ▼
+Nearest-neighbour distances
+       │
+       ▼
+Local anomaly map + global anomaly score
+       │
+       ▼
+Category-specific calibrated threshold
+       │
+       ├──────── score <= threshold ───────► NORMAL
+       │
+       └──────── score > threshold ────────► ANOMALY
+                                                   │
+                                                   ▼
+                                         Human quality review
+                                     ACCEPT / REJECT / ESCALATE
+                                                   │
+                                                   ▼
+                                         SQLite traceability
 ```
 
----
-
-## 👥 Auteurs
-
-| Nom | École |
-|---|---|
-| Mathis MARSAULT | ESAIP |
-| Axel BONNEAU | ESAIP |
-| Louis MAILLET | ESAIP |
+The model output is **decision support**, not autonomous production authority.
 
 ---
 
-*Projet réalisé dans le cadre d'un POC industriel — ESAIP 2026*
+## Verified Model
+
+### Patch-HOG kNN
+
+The deployed detector is a normal-only anomaly detector.
+
+For every image:
+
+1. the image is converted to grayscale;
+2. it is resized to **256 × 256**;
+3. it is divided into an **8 × 8 grid**;
+4. a HOG descriptor is extracted from every patch;
+5. four local texture statistics are added:
+   - mean intensity;
+   - standard deviation;
+   - mean absolute X gradient;
+   - mean absolute Y gradient;
+6. each patch is compared with normal-reference features using nearest-neighbour distance;
+7. the image score is the mean of the **three highest patch anomaly scores**;
+8. the score is compared with a category-specific calibrated threshold.
+
+A heatmap is generated from local patch scores and overlaid on the original image.
+
+---
+
+## Model Selection
+
+A simple **RGB histogram nearest-centroid** method is used as a baseline.
+
+| Category | Method | Final AUROC | AP | Accuracy | F1 |
+|---|---|---:|---:|---:|---:|
+| Bottle | RGB histogram baseline | 0.6535 | 0.8876 | 0.6600 | 0.7848 |
+| Bottle | **Patch-HOG kNN** | **1.0000** | **1.0000** | **0.9200** | **0.9444** |
+| Metal Nut | RGB histogram baseline | 0.4341 | 0.7947 | 0.5217 | 0.6292 |
+| Metal Nut | **Patch-HOG kNN** | **0.9135** | **0.9798** | **0.8116** | **0.8762** |
+| Screw | RGB histogram baseline | 0.0028 | 0.5315 | 0.2604 | 0.0000 |
+| Screw | **Patch-HOG kNN** | **0.6406** | **0.8061** | **0.6042** | **0.6935** |
+
+Patch-HOG was selected because it:
+
+- materially outperformed the baseline;
+- works with normal-only training data;
+- provides localized anomaly evidence;
+- runs locally on CPU;
+- is reproducible;
+- exposes measurable limitations instead of hiding them.
+
+A pretrained deep-patch implementation remains in the repository as an **experimental candidate**, but it is not the source of the verified deployed metrics.
+
+---
+
+## Evaluation Protocol
+
+MVTec AD provides normal training images and labeled test images, but no separate validation split for threshold selection.
+
+For this project, every original test defect folder is deterministically divided into:
+
+- **40% validation** — used to select the threshold;
+- **60% final test** — used only after the threshold is frozen.
+
+**Seed:** `42`
+
+Threshold selection uses the **Youden J statistic** on the validation holdout.
+
+This is a **project-specific evaluation protocol** and must not be presented as the untouched official MVTec benchmark protocol.
+
+### Calibrated thresholds
+
+| Category | Threshold |
+|---|---:|
+| Bottle | 1.452671 |
+| Metal Nut | 1.572177 |
+| Screw | 1.526895 |
+
+---
+
+## Error Analysis
+
+The project deliberately keeps difficult cases instead of reporting only ideal results.
+
+### Bottle
+
+- TP: 34
+- TN: 12
+- FP: 0
+- FN: 4
+
+Bottle is the strongest demonstration category. Remaining errors are mainly subtle contamination defects.
+
+### Metal Nut
+
+- TP: 46
+- TN: 10
+- FP: 3
+- FN: 10
+
+The grayscale HOG representation is less effective for anomalies that are primarily chromatic.
+
+### Screw
+
+- TP: 43
+- TN: 15
+- FP: 10
+- FN: 28
+
+Screw is used as a deliberate stress-test category. Pose/orientation variability and very localized thread/head defects expose the limitations of fixed-grid handcrafted features.
+
+A canonical alignment experiment improved ranking metrics but increased false negatives at the selected operating point, so it was **not promoted** to the deployed prototype.
+
+---
+
+## Industrialization Features
+
+The project is more than a standalone ML script.
+
+### Backend
+
+- FastAPI service
+- inspection API
+- health endpoint
+- readiness endpoint
+- benchmark evidence endpoint
+- inspection history/statistics
+- human-review endpoint
+
+### Model registry
+
+- configuration-driven model loading;
+- model artifact availability checks;
+- category-specific thresholds;
+- SHA-256 fingerprint of each model artifact;
+- model caching.
+
+### Traceability
+
+SQLite stores:
+
+- inspection UUID;
+- UTC timestamp;
+- category;
+- inference engine;
+- model artifact SHA-256;
+- original filename;
+- uploaded image SHA-256;
+- model decision;
+- anomaly score;
+- threshold;
+- latency;
+- operator decision;
+- review timestamp.
+
+Raw inspection images are **not persisted by default**.
+
+### Deployment
+
+- local / on-premise compatible;
+- Dockerfile;
+- Docker Compose;
+- environment-based configuration;
+- automated tests;
+- GitHub Actions CI.
+
+This is an **industrialized academic prototype**, not a certified factory system.
+
+---
+
+## Repository Structure
+
+```text
+.
+├── app.py
+├── webapp.py
+├── requirements.txt
+├── model_config.example.json
+├── model_config.ubo.json
+│
+├── web/
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
+│
+├── src/
+│   ├── hog_features.py
+│   ├── hog_anomaly_detector.py
+│   ├── baselines.py
+│   ├── model_registry.py
+│   ├── benchmark_service.py
+│   ├── settings.py
+│   ├── storage.py
+│   └── anomaly_detector.py
+│
+├── scripts/
+│   ├── bootstrap_demo.py
+│   ├── prepare_validation_split.py
+│   ├── build_hog_bank.py
+│   ├── evaluate_patch_hog.py
+│   ├── compare_methods.py
+│   └── export_error_analysis.py
+│
+├── artifacts/
+├── docs/
+├── tests/
+├── memory_bank/
+├── runtime/
+│
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+└── .github/workflows/tests.yml
+```
+
+---
+
+## Quick Start — Windows / VS Code
+
+### 1. Clone the project
+
+```powershell
+git clone --branch ubo-integrator-v2 --single-branch https://github.com/MamatorHack/Automated-Defect-Detection.git
+cd Automated-Defect-Detection
+code .
+```
+
+### 2. Create a virtual environment
+
+Python 3.11 or 3.12 can be used locally.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+### 3. Install dependencies
+
+```powershell
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 4. Install the runtime model artifacts
+
+The local repository must contain:
+
+```text
+model_config.json
+
+memory_bank/
+├── bottle_hog_bank.npz
+├── metal_nut_hog_bank.npz
+└── screw_hog_bank.npz
+```
+
+### 5. Check the project
+
+```powershell
+python -m compileall webapp.py app.py src scripts tests
+python -m pytest -q
+```
+
+### 6. Run VisionGuard AI
+
+```powershell
+python app.py
+```
+
+or:
+
+```powershell
+python -m uvicorn webapp:app --host 127.0.0.1 --port 8000
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000
+```
+
+Health checks:
+
+```text
+http://127.0.0.1:8000/api/health
+http://127.0.0.1:8000/api/readiness
+```
+
+For the complete demo, the System page should report **3/3 ready**.
+
+---
+
+## Rebuild the Complete Experiment
+
+To reproduce the current pipeline from the selected MVTec categories:
+
+```text
+selected_mvtec/
+├── bottle/
+├── metal_nut/
+└── screw/
+```
+
+Run:
+
+```powershell
+python scripts/bootstrap_demo.py --dataset-root "C:\path\to\selected_mvtec"
+```
+
+The script automatically:
+
+1. creates the deterministic validation/final-test split;
+2. builds the normal reference memory bank;
+3. calibrates category-specific thresholds;
+4. evaluates the frozen threshold on final-test data;
+5. writes machine-generated evidence;
+6. creates `model_config.json`.
+
+---
+
+## CI / Reproducibility
+
+GitHub Actions automatically:
+
+1. installs the dependencies;
+2. compiles Python sources;
+3. runs the test suite.
+
+Local equivalent:
+
+```powershell
+python -m compileall app.py src scripts tests
+python -m pytest -q
+```
+
+---
+
+## Security, Ethics, and Limitations
+
+Main risks considered:
+
+- false negatives;
+- false positives;
+- lighting/camera drift;
+- unseen production variants;
+- automation over-reliance;
+- evaluation leakage;
+- data/privacy leakage.
+
+Mitigations include:
+
+- separate validation/final-test evidence;
+- human review;
+- no raw-image persistence by default;
+- no credentials or secrets in the repository;
+- model artifact fingerprinting;
+- explicit readiness checks;
+- category-specific re-validation.
+
+A real factory deployment would additionally require authentication, TLS, centralized monitoring, camera/PLC/MES integration, backup and recovery, formal model change control, drift monitoring, cybersecurity hardening, and validation with target production-line data.
+
+---
+
+## Generative AI Declaration
+
+Generative AI was materially used to support:
+
+- architecture planning;
+- code generation/refactoring;
+- test design;
+- documentation;
+- risk analysis;
+- demonstration and presentation preparation.
+
+The team remains responsible for:
+
+- understanding every submitted component;
+- executing and testing generated code;
+- verifying technical claims;
+- verifying data and sources;
+- producing real experiment evidence;
+- defending the complete system.
+
+No final metric, experiment result, or technical evidence should be fabricated from AI output.
+
+---
+
+## Documentation
+
+Detailed project documentation is available under `docs/`, including:
+
+- architecture;
+- model card;
+- data card;
+- model selection;
+- validation plan;
+- error analysis;
+- Screw alignment experiment;
+- operations/deployment;
+- security/ethics/risks;
+- AI-use declaration;
+- project decision log;
+- UBO rubric mapping.
+
+---
+
+## Course
+
+**DES SOLUC INTELIGENTES [LAB 3]**  
+Universidad Bernardo O'Higgins — 2026
+
+**Team:** Mathis M. / Louis / Julien

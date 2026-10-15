@@ -1,0 +1,23 @@
+{
+  "default_category": "bottle",
+  "categories": {
+    "bottle": {
+      "engine": "patch_hog",
+      "memory_bank": "memory_bank/bottle_hog_bank.npz",
+      "threshold": 1.4526714086532593,
+      "threshold_source": "Deterministic 40% validation holdout by defect folder, seed 42; verified execution 2026-10-14"
+    },
+    "metal_nut": {
+      "engine": "patch_hog",
+      "memory_bank": "memory_bank/metal_nut_hog_bank.npz",
+      "threshold": 1.5721772909164429,
+      "threshold_source": "Deterministic 40% validation holdout by defect folder, seed 42; verified execution 2026-10-14"
+    },
+    "screw": {
+      "engine": "patch_hog",
+      "memory_bank": "memory_bank/screw_hog_bank.npz",
+      "threshold": 1.5268949270248413,
+      "threshold_source": "Deterministic 40% validation holdout by defect folder, seed 42; verified execution 2026-10-14"
+    }
+  }
+}

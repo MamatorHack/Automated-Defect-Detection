@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VisionGuard AI — Industrial Quality Intelligence</title>
+  <meta name="description" content="Human-centered industrial visual anomaly detection prototype." />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#" data-page-link="inspection">
+      <span class="brand-mark">V</span>
+      <span>
+        <strong>VisionGuard AI</strong>
+        <small>Industrial Quality Intelligence</small>
+      </span>
+    </a>
+
+    <nav class="main-nav" aria-label="Primary navigation">
+      <button class="nav-item active" data-page-link="inspection">Inspection</button>
+      <button class="nav-item" data-page-link="performance">Performance</button>
+      <button class="nav-item" data-page-link="system">System</button>
+    </nav>
+
+    <div id="globalStatus" class="status-pill">
+      <span class="dot"></span>
+      <span id="globalStatusText">Checking system</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="page active" data-page="inspection">
+      <section class="hero compact-hero">
+        <div class="eyebrow">UBO · DEVELOPMENT OF INTELLIGENT SOLUTIONS</div>
+        <h1>Visual anomaly detection<br /><span>built for human decisions.</span></h1>
+        <p>
+          Inspect industrial parts using normal-only local visual representations, calibrated decision thresholds,
+          localized anomaly evidence, and an explicit human-review workflow.
+        </p>
+        <div class="hero-badges">
+          <span>Normal-only learning</span>
+          <span>Localized evidence</span>
+          <span>Human in the loop</span>
+          <span>Traceable decisions</span>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <article class="panel input-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="step">01</span>
+              <h2>Inspection input</h2>
+            </div>
+            <span class="muted">PNG · JPEG · WEBP</span>
+          </div>
+
+          <label class="field">
+            <span>Production category</span>
+            <select id="category"></select>
+          </label>
+
+          <label class="dropzone" id="dropzone">
+            <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+            <img id="preview" alt="Selected part preview" />
+            <div id="dropPrompt" class="drop-prompt">
+              <div class="upload-icon">↑</div>
+              <strong>Drop an inspection image</strong>
+              <span>or click to browse</span>
+            </div>
+          </label>
+
+          <button id="inspectButton" class="primary" disabled>
+            <span>Run inspection</span>
+            <span class="arrow">→</span>
+          </button>
+
+          <div id="configurationWarning" class="warning hidden"></div>
+        </article>
+
+        <article class="panel result-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="step">02</span>
+              <h2>Anomaly evidence</h2>
+            </div>
+            <span id="resultState" class="result-state idle">Awaiting image</span>
+          </div>
+
+          <div class="result-visual">
+            <img id="overlay" alt="Anomaly evidence overlay" />
+            <div id="emptyResult" class="empty-result">
+              <div class="scan-frame"></div>
+              <p>Inspection evidence will appear here.</p>
+            </div>
+            <div id="loader" class="loader hidden"><span></span><span></span><span></span></div>
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <span>Anomaly score</span>
+              <strong id="score">—</strong>
+            </div>
+            <div class="metric">
+              <span>Threshold</span>
+              <strong id="threshold">—</strong>
+            </div>
+            <div class="metric">
+              <span>Latency</span>
+              <strong id="latency">—</strong>
+            </div>
+          </div>
+
+          <div class="guidance">
+            <span>Operator guidance</span>
+            <p id="guidance">The model provides evidence only. Final quality responsibility remains human.</p>
+          </div>
+
+          <div id="reviewActions" class="review-actions hidden">
+            <span>Human quality decision</span>
+            <div>
+              <button data-action="ACCEPT" class="review-button accept">Accept</button>
+              <button data-action="REJECT" class="review-button reject">Reject</button>
+              <button data-action="ESCALATE" class="review-button escalate">Escalate</button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="evidence-grid">
+        <article>
+          <span class="mini-label">MODEL CAPABILITY</span>
+          <h3>Detect visual deviation</h3>
+          <p>Local visual features are compared with a memory bank built only from normal production examples.</p>
+        </article>
+        <article>
+          <span class="mini-label">OPERATIONAL PROCESS</span>
+          <h3>Turn evidence into workflow</h3>
+          <p>Acquisition, preprocessing, scoring, visualization, logging, and operator review form the complete solution.</p>
+        </article>
+        <article>
+          <span class="mini-label">RESPONSIBLE DECISION</span>
+          <h3>Keep humans accountable</h3>
+          <p>An anomaly signal triggers review; it never autonomously authorizes or rejects a production part.</p>
+        </article>
+      </section>
+
+      <section class="operations compact-section">
+        <div class="operations-heading">
+          <div>
+            <span class="eyebrow">OPERATIONAL TRACEABILITY</span>
+            <h2>Recent inspection activity</h2>
+          </div>
+          <button id="refreshHistory" class="secondary">Refresh</button>
+        </div>
+
+        <div class="ops-stats">
+          <article><span>Total inspections</span><strong id="statTotal">0</strong></article>
+          <article><span>Model anomalies</span><strong id="statAnomalies">0</strong></article>
+          <article><span>Human reviewed</span><strong id="statReviewed">0</strong></article>
+          <article><span>Average latency</span><strong id="statLatency">—</strong></article>
+        </div>
+
+        <div class="history-card">
+          <div class="history-head">
+            <span>Time</span><span>Category</span><span>Model decision</span><span>Score</span><span>Human decision</span>
+          </div>
+          <div id="historyRows" class="history-rows">
+            <div class="history-empty">No inspections recorded yet.</div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="page" data-page="performance">
+      <section class="section-hero">
+        <div>
+          <span class="eyebrow">VERIFIED MODEL EVIDENCE</span>
+          <h1>Performance that stays<br /><span>traceable to real executions.</span></h1>
+          <p>
+            Results below are loaded from machine-generated experiment artifacts. Threshold selection uses a dedicated
+            validation holdout before final-test evaluation.
+          </p>
+        </div>
+        <div class="protocol-card">
+          <span>Evaluation protocol</span>
+          <strong>40% validation / 60% final-test</strong>
+          <p>Deterministic split within each original defect folder · seed 42.</p>
+        </div>
+      </section>
+
+      <section>
+        <div class="operations-heading">
+          <div>
+            <span class="eyebrow">SELECTED MODEL</span>
+            <h2>Final-test performance</h2>
+          </div>
+          <span class="muted">Patch-HOG kNN · normal-only memory bank</span>
+        </div>
+        <div id="benchmarkCards" class="benchmark-cards"></div>
+      </section>
+
+      <section class="comparison-panel">
+        <div>
+          <span class="mini-label">MODEL SELECTION</span>
+          <h2>Why this model is deployed</h2>
+          <p>
+            The selected local-feature detector materially outperformed a simple RGB-histogram centroid baseline
+            across all three product categories while remaining CPU-friendly, reproducible, and capable of producing
+            spatial anomaly evidence.
+          </p>
+        </div>
+        <div class="comparison-flow">
+          <div><span>01</span><strong>RGB histogram</strong><small>Baseline</small></div>
+          <div class="flow-arrow">→</div>
+          <div class="selected"><span>02</span><strong>Patch-HOG kNN</strong><small>Verified deployment model</small></div>
+          <div class="flow-arrow">→</div>
+          <div><span>03</span><strong>Deep patch</strong><small>Experimental candidate</small></div>
+        </div>
+      </section>
+
+      <section class="error-analysis-grid">
+        <article>
+          <span class="mini-label">BOTTLE</span>
+          <h3>Stable demo category</h3>
+          <strong>0 FP · 4 FN</strong>
+          <p>Remaining misses are mainly subtle contamination defects below the selected threshold.</p>
+        </article>
+        <article>
+          <span class="mini-label">METAL NUT</span>
+          <h3>Realistic industrial case</h3>
+          <strong>3 FP · 10 FN</strong>
+          <p>Color-only anomalies expose a known weakness of the grayscale HOG representation.</p>
+        </article>
+        <article>
+          <span class="mini-label">SCREW</span>
+          <h3>Deliberate stress test</h3>
+          <strong>10 FP · 28 FN</strong>
+          <p>Pose variability and very localized thread/head defects remain the main limitations.</p>
+        </article>
+      </section>
+
+      <section class="engineering-note">
+        <div>
+          <span class="eyebrow">ENGINEERING DECISION</span>
+          <h2>Screw alignment was tested — and not promoted.</h2>
+        </div>
+        <p>
+          Canonical alignment improved Screw ranking metrics (AUROC/AP) but worsened the selected operating point by
+          increasing false negatives. The current verified model therefore remains deployed. This preserves the
+          decision objective instead of optimizing a single headline metric.
+        </p>
+      </section>
+    </section>
+
+    <section class="page" data-page="system">
+      <section class="section-hero">
+        <div>
+          <span class="eyebrow">SYSTEM & MODEL HEALTH</span>
+          <h1>Know exactly what is<br /><span>running and ready.</span></h1>
+          <p>
+            Runtime status, model readiness, calibrated thresholds, artifact fingerprints, and deployment properties
+            are exposed directly by the service.
+          </p>
+        </div>
+        <div id="systemSummary" class="system-summary-card">
+          <span>Service state</span>
+          <strong id="systemState">Checking…</strong>
+          <p id="systemVersion">—</p>
+        </div>
+      </section>
+
+      <section class="health-grid">
+        <article>
+          <span>API liveness</span>
+          <strong id="healthApi">—</strong>
+          <p>FastAPI process and SQLite runtime.</p>
+        </article>
+        <article>
+          <span>Model readiness</span>
+          <strong id="healthModels">—</strong>
+          <p>Configured categories with artifact + calibrated threshold.</p>
+        </article>
+        <article>
+          <span>Inference mode</span>
+          <strong>Local</strong>
+          <p>No external inference API is required for the verified model.</p>
+        </article>
+        <article>
+          <span>Image retention</span>
+          <strong>Disabled</strong>
+          <p>Raw inspection images are not persisted by default.</p>
+        </article>
+      </section>
+
+      <section>
+        <div class="operations-heading">
+          <div>
+            <span class="eyebrow">MODEL REGISTRY</span>
+            <h2>Configured production categories</h2>
+          </div>
+          <button id="refreshSystem" class="secondary">Refresh status</button>
+        </div>
+        <div id="modelRegistryCards" class="registry-grid"></div>
+      </section>
+
+      <section class="technical-strip system-strip">
+        <div>
+          <span>Backend</span>
+          <strong>FastAPI</strong>
+        </div>
+        <div>
+          <span>Traceability</span>
+          <strong>SQLite + SHA-256</strong>
+        </div>
+        <div>
+          <span>Packaging</span>
+          <strong>Docker / Compose</strong>
+        </div>
+        <div>
+          <span>CI</span>
+          <strong>GitHub Actions</strong>
+        </div>
+      </section>
+
+      <section class="production-boundary">
+        <span class="mini-label">PRODUCTION BOUNDARY</span>
+        <h2>Industrialized prototype ≠ certified factory system</h2>
+        <p>
+          This implementation demonstrates the software architecture, traceability, model lifecycle, validation
+          discipline, and human-control workflow. A real factory deployment would still require authentication, TLS,
+          centralized monitoring, camera/PLC/MES integration, formal change control, backup policy, drift monitoring,
+          security hardening, and acceptance criteria validated with the target production line.
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <span>VisionGuard AI · Academic industrial prototype</span>
+    <span>Mathis Marsault · Julien Martinat · Louis Maillet</span>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
